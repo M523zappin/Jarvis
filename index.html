@@ -23,13 +23,12 @@
 <body>
     <div id="hud-top">
         <h2 style="margin:0; letter-spacing:8px; font-weight:100;">KA-A2A // OMNI</h2>
-        <div style="font-size:8px; opacity:0.6; margin-top:5px;">COGNITIVE_LOAD: ACTIVE | MODE: PROACTIVE</div>
+        <div style="font-size:8px; opacity:0.6; margin-top:5px;">COGNITIVE_LOAD: ACTIVE | MODE: PROACTIVE_PARTNER</div>
     </div>
     <div id="terminal">> NEURAL MESH V3.0: STABLE<br>> CONVERSATION_LINK: ENGAGED<br>> STANDING BY FOR JOINT VENTURES...</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE NEURAL CLOUD (12,000 Points) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -54,7 +53,6 @@
         }
         animate();
 
-        // --- 2. THE LONDON PROACTIVE BRAIN ---
         const synth = window.speechSynthesis;
         let selectedVoice = null;
         const suggestions = [
