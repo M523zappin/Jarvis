@@ -1,19 +1,9 @@
 {
-  "name": "KA-A2A OMNI",
+  "name": "KA-A2A TERMINAL",
   "short_name": "JARVIS",
-  "description": "Full-Duplex Neural Intelligence Core",
-  "start_url": "index.html?v=11.0-duplex",
+  "start_url": "index.html?v=17.0",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "icons": [
-    {
-      "src": "icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["productivity", "utilities"]
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
 }
