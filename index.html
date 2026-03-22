@@ -1,47 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>KA-A2A CORE</title>
-    <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: monospace; }
-        #hud { position: absolute; top: 20px; left: 20px; color: #00FF41; z-index: 10; pointer-events: none; }
-        .glitch { text-shadow: 0 0 10px #00FF41; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
-    </style>
-</head>
-<body>
-    <div id="hud">
-        <h2 class="glitch">KA-A2A // GENESIS</h2>
-        <div id="log" style="font-size: 10px;">[SYS] ASDV: ACTIVE | RRL: POLLING...</div>
-    </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script>
-        // THREE.js logic for the Emerald Sphere from your video
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+// --- VOICE-CORE INITIALIZATION ---
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+const recognition = new SpeechRecognition();
+const synth = window.speechSynthesis;
 
-        const geometry = new THREE.SphereGeometry(2, 32, 32);
-        const material = new THREE.MeshBasicMaterial({ color: 0x00FF41, wireframe: true, transparent: true, opacity: 0.5 });
-        const sphere = new THREE.Mesh(geometry, material);
-        scene.add(sphere);
-        camera.position.z = 5;
+recognition.continuous = true; // Stay listening
+recognition.interimResults = false; // Only process final sentences
+recognition.lang = 'en-US';
 
-        function animate() {
-            requestAnimationFrame(animate);
-            sphere.rotation.y += 0.005;
-            sphere.rotation.x += 0.002;
-            renderer.render(scene, camera);
-        }
-        animate();
+// Start listening when you tap the screen
+document.body.onclick = () => {
+    recognition.start();
+    speak("KA-A2A Voice Link Established. I am listening.");
+};
 
-        // Register Service Worker
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
-    </script>
-</body>
-</html>
+recognition.onresult = (event) => {
+    const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
+    document.getElementById('log').innerHTML = `[USER]: ${transcript}`;
+    
+    // JARVIS LOGIC: Respond to specific intents
+    if (transcript.includes("status")) {
+        speak("All systems emerald. ASDV protocol is scouting ghost tunnels.");
+    } else if (transcript.includes("evolve")) {
+        speak("Initiating recursive research loop. Scanning for logic patches.");
+    } else {
+        speak("Command received. Processing intent.");
+    }
+};
+
+// Jarvis Voice Synthesis
+function speak(text) {
+    const utterance = new THREE.Audio(listener); // Optional: Link to 3D audio
+    const msg = new SpeechSynthesisUtterance(text);
+    msg.rate = 1.1; // Slightly faster for a tech-feel
+    msg.pitch = 0.8; // Lower pitch for a more robotic/advanced tone
+    synth.speak(msg);
+    document.getElementById('log').innerHTML += `<br>[JARVIS]: ${text}`;
+}
+
+// Auto-restart if it times out
+recognition.onend = () => { recognition.start(); };
