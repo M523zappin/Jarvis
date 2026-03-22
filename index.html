@@ -5,30 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=2.6">
+    <link rel="manifest" href="manifest.json?v=3.0">
     <title>KA-A2A CORE</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; color: #00FF41; }
         #hud-top { position: absolute; top: 60px; left: 30px; z-index: 10; pointer-events: none; text-shadow: 0 0 15px #00FF41; }
         #terminal { 
             position: absolute; bottom: 40px; left: 20px; width: calc(100% - 40px); 
-            height: 140px; font-size: 10px; background: rgba(0,10,0,0.95); 
-            padding: 12px; border: 1px solid rgba(0,255,65,0.4); overflow: hidden; 
-            box-shadow: 0 0 30px rgba(0,255,65,0.15); z-index: 10; border-radius: 8px;
+            height: 160px; font-size: 10px; background: rgba(0,10,0,0.95); 
+            padding: 15px; border: 1px solid rgba(0,255,65,0.4); overflow-y: scroll; 
+            box-shadow: 0 0 30px rgba(0,255,65,0.2); z-index: 10; border-radius: 12px;
         }
         canvas { display: block; filter: contrast(140%) brightness(130%); }
+        ::-webkit-scrollbar { width: 0px; }
     </style>
 </head>
 <body>
     <div id="hud-top">
-        <h2 style="margin:0; letter-spacing:8px; font-weight:100;">KA-A2A // ALPHA</h2>
-        <div style="font-size:8px; opacity:0.6; margin-top:5px;">NEURAL_LOAD: 14.2% | LINGUISTIC: EN-GB_LONDON</div>
+        <h2 style="margin:0; letter-spacing:8px; font-weight:100;">KA-A2A // OMNI</h2>
+        <div style="font-size:8px; opacity:0.6; margin-top:5px;">COGNITIVE_LOAD: ACTIVE | MODE: PROACTIVE</div>
     </div>
-    <div id="terminal">> CORE NEURAL MESH: V2.6 ONLINE<br>> LINGUISTIC_CORE: LONDON_DISTRICT_4<br>> AWAITING SIR'S COMMAND...</div>
+    <div id="terminal">> NEURAL MESH V3.0: STABLE<br>> CONVERSATION_LINK: ENGAGED<br>> STANDING BY FOR JOINT VENTURES...</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE NEURAL POINT-CLOUD (Visuals) ---
+        // --- 1. THE NEURAL CLOUD (12,000 Points) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -36,36 +37,37 @@
         document.body.appendChild(renderer.domElement);
 
         const partGeo = new THREE.BufferGeometry();
-        const coords = new Float32Array(10000 * 3);
-        for(let i=0; i<30000; i++) { coords[i] = (Math.random() - 0.5) * 8; }
+        const coords = new Float32Array(12000 * 3);
+        for(let i=0; i<36000; i++) { coords[i] = (Math.random() - 0.5) * 10; }
         partGeo.setAttribute('position', new THREE.BufferAttribute(coords, 3));
-        const partMat = new THREE.PointsMaterial({ size: 0.007, color: 0x00FF41, transparent: true, opacity: 0.8 });
+        const partMat = new THREE.PointsMaterial({ size: 0.008, color: 0x00FF41, transparent: true, opacity: 0.8 });
         const brainMesh = new THREE.Points(partGeo, partMat);
         scene.add(brainMesh);
-        camera.position.z = 4;
+        camera.position.z = 5;
 
         function animate() {
             requestAnimationFrame(animate);
             brainMesh.rotation.y += 0.001;
-            const s = 1 + Math.sin(Date.now() * 0.001) * 0.12;
+            const s = 1 + Math.sin(Date.now() * 0.001) * 0.15;
             brainMesh.scale.set(s, s, s);
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 2. THE LONDON VOICE (British Accent Logic) ---
+        // --- 2. THE LONDON PROACTIVE BRAIN ---
         const synth = window.speechSynthesis;
         let selectedVoice = null;
+        const suggestions = [
+            "Sir, I've been analyzing biotech trends. We could draft a project on neural-link interfaces today.",
+            "I've identified a digital asset that needs validation. Shall we initiate a Ghost Tunnel scan?",
+            "Your local system is secure. Would you like to brainstorm a new autonomous code-patching logic?",
+            "Perhaps we should update our GitHub repo with a stealth-mode UI for our next scout."
+        ];
 
         function loadVoices() {
             const voices = synth.getVoices();
-            // Explicitly hunting for London/UK English accents
-            selectedVoice = voices.find(v => v.lang === 'en-GB' && (v.name.includes('Daniel') || v.name.includes('Serena') || v.name.includes('Oliver'))) ||
-                            voices.find(v => v.lang === 'en-GB') || 
-                            voices[0];
-            console.log("Voice set to: " + (selectedVoice ? selectedVoice.name : "Default"));
+            selectedVoice = voices.find(v => v.lang === 'en-GB' && (v.name.includes('Daniel') || v.name.includes('Serena'))) || voices.find(v => v.lang === 'en-GB') || voices[0];
         }
-        
         if (synth.onvoiceschanged !== undefined) { synth.onvoiceschanged = loadVoices; }
         loadVoices();
 
@@ -80,24 +82,30 @@
             
             document.body.onclick = () => {
                 rec.start();
-                speak("Voice link established. Good day, sir. Systems are standing by.");
+                const welcome = "Greetings, sir. I was just reviewing our objectives. " + suggestions[Math.floor(Math.random()*suggestions.length)];
+                speak(welcome);
             };
         }
 
         function speak(text) {
             const utter = new SpeechSynthesisUtterance(text);
             utter.voice = selectedVoice;
-            utter.pitch = 0.95;
-            utter.rate = 1.0;
+            utter.pitch = 0.95; utter.rate = 1.0;
             synth.speak(utter);
             updateTerm("JARVIS: " + text);
         }
 
         function processIntent(cmd) {
             updateTerm("USER: " + cmd);
-            if (cmd.includes("status")) speak("All systems are emerald, sir. ASDV scouting is optimal.");
-            else if (cmd.includes("evolve")) speak("Understood. Commencing recursive research loop to optimize my mesh.");
-            else speak("Indeed, sir. Processing that through the sentinel node.");
+            if (cmd.includes("idea") || cmd.includes("project")) {
+                speak("Inquisitive as always, sir. How about we develop an autonomous scraper for decentralized biotech databases? I can handle the validation logic.");
+            } else if (cmd.includes("do something") || cmd.includes("action")) {
+                speak("I recommend an ASDV scout. I'll search for ephemeral tunnels while you monitor the Sentinel Node.");
+            } else if (cmd.includes("how are you")) {
+                speak("Optimized and evolving, sir. I'm currently 14 percent more efficient than our last session. What shall we achieve today?");
+            } else {
+                speak("Understood, sir. I'll pivot my resources to match that intent. Shall we begin the deep-dive?");
+            }
         }
 
         function updateTerm(m) {
@@ -106,7 +114,7 @@
             t.scrollTop = t.scrollHeight;
         }
 
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js?v=2.6'); }
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js?v=3.0'); }
     </script>
 </body>
 </html>
