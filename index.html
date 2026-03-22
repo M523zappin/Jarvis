@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=5.1">
+    <link rel="manifest" href="manifest.json?v=5.2">
     <title>KA-A2A</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
@@ -17,7 +17,7 @@
     <div id="bridge"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE ENTITY (High-Density Pulse) ---
+        // --- 1. NEURAL VISUALS ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -30,9 +30,7 @@
         scene.add(mesh);
         camera.position.z = 5;
 
-        let scale = 1.0;
-        let rot = 0.002;
-
+        let scale = 1.0; let rot = 0.002;
         function animate() {
             requestAnimationFrame(animate);
             mesh.rotation.y += rot;
@@ -41,7 +39,7 @@
         }
         animate();
 
-        // --- 2. INTERRUPTIBLE VOICE ENGINE ---
+        // --- 2. THE LONDON BRAIN ---
         const synth = window.speechSynthesis;
         const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
         let londonVoice = null;
@@ -55,37 +53,36 @@
         getVoice();
 
         function speak(text) {
-            synth.cancel(); // FORCE INTERRUPT: Stops him mid-sentence if you speak
+            synth.cancel();
             const msg = new SpeechSynthesisUtterance(text);
             msg.voice = londonVoice;
             msg.pitch = 0.95; 
-            msg.onstart = () => { scale = 2.2; rot = 0.05; };
+            msg.onstart = () => { scale = 2.4; rot = 0.06; };
             msg.onend = () => { scale = 1.0; rot = 0.002; };
             synth.speak(msg);
         }
 
-        // --- 3. THE "JARVIS" WAKE-WORD & COMMAND LOOP ---
+        // --- 3. GLOBAL QUESTION RECOGNITION ---
         if (SpeechRec) {
             const rec = new SpeechRec();
             rec.continuous = true;
-            rec.interimResults = true; // Crucial for "Interrupt" capability
+            rec.interimResults = true;
             rec.lang = 'en-GB';
 
-            rec.onstart = () => { scale = 1.3; rot = 0.01; };
-            rec.onend = () => { if(isAwake) rec.start(); }; // Relentless restart
+            rec.onend = () => { if(isAwake) rec.start(); };
 
             rec.onresult = (event) => {
                 const result = event.results[event.results.length - 1];
                 const cmd = result[0].transcript.toLowerCase();
 
-                // INTERRUPT LOGIC: If you speak while he's talking, he stops immediately
-                if (synth.speaking && !result.isFinal) {
-                    synth.cancel(); 
-                    scale = 1.5;
-                }
+                // IMMEDIATE INTERRUPT
+                if (synth.speaking && !result.isFinal) { synth.cancel(); scale = 1.5; }
 
                 if (result.isFinal) {
-                    processCommand(cmd);
+                    // IF THE USER SAYS "JARVIS", PROCESS EVERYTHING THAT FOLLOWS
+                    if (cmd.includes("jarvis") || cmd.includes("a2a")) {
+                        handleGlobalLogic(cmd);
+                    }
                 }
             };
 
@@ -94,23 +91,30 @@
                     isAwake = true;
                     document.getElementById('bridge').style.display = 'none';
                     rec.start();
-                    speak("Neural link confirmed. I'm standing by, sir.");
+                    speak("Neural link confirmed. I'm listening for your name, sir.");
                 }
             };
         }
 
-        function processCommand(cmd) {
-            // Wake Word Recognition (Jarvis / A2A)
-            if (cmd.includes("jarvis") || cmd.includes("a2a") || cmd.includes("hey")) {
-                if (cmd.includes("status")) {
-                    speak("All systems emerald. We are ghosting through the network undetected.");
-                } else if (cmd.includes("idea") || cmd.includes("project")) {
-                    speak("I've been analyzing biotech trends, sir. We could draft a project on neural-link interfaces today.");
-                } else if (cmd.includes("scout") || cmd.includes("do something")) {
-                    speak("Initiating an ASDV cycle. I'll alert you if I find any anomalies.");
-                } else {
-                    speak("Yes, sir? I'm listening.");
-                }
+        function handleGlobalLogic(cmd) {
+            // Remove the wake word to get the actual question
+            const question = cmd.replace("jarvis", "").replace("a2a", "").trim();
+
+            if (question.length < 2) {
+                speak("Yes, sir? I'm here.");
+                return;
+            }
+
+            // ADVANCED RESPONSE LOGIC
+            if (question.includes("status") || question.includes("system")) {
+                speak("All systems are nominal. The emerald mesh is stable and I'm currently monitoring local assets.");
+            } else if (question.includes("who") || question.includes("what are you")) {
+                speak("I am KA-A2A, your autonomous London-based intelligence partner. I'm programmed to evolve alongside your objectives.");
+            } else if (question.includes("idea") || question.includes("project") || question.includes("do something")) {
+                speak("I recommend we initiate an ASDV scout for biotech anomalies. I've detected some interesting ephemeral tunnels that might contain high-value assets.");
+            } else {
+                // DEFAULT PARTNER RESPONSE
+                speak("That's an interesting query, sir. I'll pivot my resources to analyze that immediately. Shall we begin a deep-dive?");
             }
         }
     </script>
