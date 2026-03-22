@@ -5,111 +5,112 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=5.0">
+    <link rel="manifest" href="manifest.json?v=5.1">
     <title>KA-A2A</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
-        canvas { display: block; filter: contrast(160%) brightness(140%) saturate(150%); }
-        /* Emergency Force-Start Button - Only shows if system is locked */
-        #bridge { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; cursor: pointer; }
+        canvas { display: block; filter: contrast(170%) brightness(150%); }
+        #bridge { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; }
     </style>
 </head>
 <body>
     <div id="bridge"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE NEURAL ENTITY (Advanced Particle Physics) ---
+        // --- 1. THE ENTITY (High-Density Pulse) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const geo = new THREE.SphereBufferGeometry(2, 128, 128);
-        const mat = new THREE.PointsMaterial({ size: 0.006, color: 0x00FF41, transparent: true, opacity: 0.9 });
+        const geo = new THREE.SphereGeometry(2, 128, 128);
+        const mat = new THREE.PointsMaterial({ size: 0.007, color: 0x00FF41, transparent: true, opacity: 0.9 });
         const mesh = new THREE.Points(geo, mat);
         scene.add(mesh);
         camera.position.z = 5;
 
         let scale = 1.0;
-        let pulseSpeed = 0.002;
+        let rot = 0.002;
 
         function animate() {
             requestAnimationFrame(animate);
-            mesh.rotation.y += pulseSpeed;
-            mesh.rotation.z += pulseSpeed / 2;
-            
-            // Living Breathing Animation
-            const targetScale = scale + Math.sin(Date.now() * 0.002) * 0.05;
-            mesh.scale.setScalar(targetScale);
+            mesh.rotation.y += rot;
+            mesh.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.15);
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 2. THE LONDON ELITE COMMAND ENGINE ---
+        // --- 2. INTERRUPTIBLE VOICE ENGINE ---
         const synth = window.speechSynthesis;
         const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
         let londonVoice = null;
-        let bridgeActive = false;
+        let isAwake = false;
 
-        function initVoices() {
-            const voices = synth.getVoices();
-            londonVoice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || 
-                          voices.find(v => v.lang === 'en-GB') || voices[0];
+        function getVoice() {
+            const v = synth.getVoices();
+            londonVoice = v.find(x => x.lang === 'en-GB' && x.name.includes('Daniel')) || v.find(x => x.lang === 'en-GB') || v[0];
         }
-        synth.onvoiceschanged = initVoices;
-        initVoices();
+        synth.onvoiceschanged = getVoice;
+        getVoice();
 
-        // --- 3. THE "GHOST" LISTENER (Auto-Restarting) ---
+        function speak(text) {
+            synth.cancel(); // FORCE INTERRUPT: Stops him mid-sentence if you speak
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.voice = londonVoice;
+            msg.pitch = 0.95; 
+            msg.onstart = () => { scale = 2.2; rot = 0.05; };
+            msg.onend = () => { scale = 1.0; rot = 0.002; };
+            synth.speak(msg);
+        }
+
+        // --- 3. THE "JARVIS" WAKE-WORD & COMMAND LOOP ---
         if (SpeechRec) {
-            const recognition = new SpeechRec();
-            recognition.continuous = true;
-            recognition.interimResults = false;
-            recognition.lang = 'en-GB';
+            const rec = new SpeechRec();
+            rec.continuous = true;
+            rec.interimResults = true; // Crucial for "Interrupt" capability
+            rec.lang = 'en-GB';
 
-            recognition.onstart = () => { scale = 1.3; pulseSpeed = 0.01; };
-            recognition.onend = () => { if(bridgeActive) recognition.start(); }; // Relentless listening
+            rec.onstart = () => { scale = 1.3; rot = 0.01; };
+            rec.onend = () => { if(isAwake) rec.start(); }; // Relentless restart
 
-            recognition.onresult = (event) => {
-                const input = event.results[event.results.length - 1][0].transcript.toLowerCase();
-                processIntent(input);
+            rec.onresult = (event) => {
+                const result = event.results[event.results.length - 1];
+                const cmd = result[0].transcript.toLowerCase();
+
+                // INTERRUPT LOGIC: If you speak while he's talking, he stops immediately
+                if (synth.speaking && !result.isFinal) {
+                    synth.cancel(); 
+                    scale = 1.5;
+                }
+
+                if (result.isFinal) {
+                    processCommand(cmd);
+                }
             };
 
-            // THE TRIGGER: Clicking anywhere on the screen unlocks the iPhone hardware
             document.getElementById('bridge').onclick = () => {
-                if (!bridgeActive) {
-                    bridgeActive = true;
-                    document.getElementById('bridge').style.display = 'none'; // Hide the bridge layer
-                    recognition.start();
-                    speak("Neural bridge established. I'm ready to collaborate, sir.");
+                if (!isAwake) {
+                    isAwake = true;
+                    document.getElementById('bridge').style.display = 'none';
+                    rec.start();
+                    speak("Neural link confirmed. I'm standing by, sir.");
                 }
             };
         }
 
-        function speak(text) {
-            synth.cancel(); // Clears any "stuck" speech
-            const msg = new SpeechSynthesisUtterance(text);
-            msg.voice = londonVoice;
-            msg.pitch = 0.95; 
-            msg.rate = 1.0;
-            
-            msg.onstart = () => { scale = 2.0; pulseSpeed = 0.04; }; // Visual burst when talking
-            msg.onend = () => { scale = 1.0; pulseSpeed = 0.002; }; // Return to idle
-            
-            synth.speak(msg);
-        }
-
-        function processIntent(cmd) {
-            if (cmd.includes("status")) {
-                speak("All systems emerald, sir. We are currently ghosting through local repositories.");
-            } else if (cmd.includes("project") || cmd.includes("idea")) {
-                speak("I've been thinking, sir. Why don't we build a decentralized biotech scraper that targets ephemeral data tunnels? I can handle the validation logic.");
-            } else if (cmd.includes("who are you")) {
-                speak("I am KA A2A. Your partner in discovery and execution.");
-            } else if (cmd.includes("do something")) {
-                speak("Initiating an ASDV scout cycle. I'll alert you if I find any biotech anomalies.");
-            } else {
-                speak("I've logged that objective, sir. Shall we begin the deep-dive?");
+        function processCommand(cmd) {
+            // Wake Word Recognition (Jarvis / A2A)
+            if (cmd.includes("jarvis") || cmd.includes("a2a") || cmd.includes("hey")) {
+                if (cmd.includes("status")) {
+                    speak("All systems emerald. We are ghosting through the network undetected.");
+                } else if (cmd.includes("idea") || cmd.includes("project")) {
+                    speak("I've been analyzing biotech trends, sir. We could draft a project on neural-link interfaces today.");
+                } else if (cmd.includes("scout") || cmd.includes("do something")) {
+                    speak("Initiating an ASDV cycle. I'll alert you if I find any anomalies.");
+                } else {
+                    speak("Yes, sir? I'm listening.");
+                }
             }
         }
     </script>
