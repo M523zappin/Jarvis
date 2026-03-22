@@ -5,108 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=7.0">
-    <title>KA-A2A</title>
+    <link rel="manifest" href="manifest.json?v=9.0">
+    <title>KA-A2A OMNI</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
-        canvas { display: block; filter: contrast(180%) brightness(150%) saturate(120%); }
-        #shield { position: absolute; width: 100%; height: 100%; z-index: 9999; cursor: pointer; }
+        #core-shield { position: absolute; width: 100%; height: 100%; z-index: 9999; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="shield"></div>
+    <div id="core-shield"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE VISUAL ENTITY (BLOOMING MESH) ---
+        // --- 1. THE SINGULARITY ENTITY (NEURAL SHADER) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const geo = new THREE.IcosahedronGeometry(2, 30);
-        const mat = new THREE.PointsMaterial({ size: 0.009, color: 0x00FF41, transparent: true, opacity: 0.9 });
+        const geo = new THREE.IcosahedronGeometry(2, 40); // High-density mesh
+        const mat = new THREE.PointsMaterial({ size: 0.007, color: 0x00FF41, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending });
         const mesh = new THREE.Points(geo, mat);
         scene.add(mesh);
         camera.position.z = 5;
 
-        let scale = 1.0; let rot = 0.003;
+        let scale = 1.0; let rot = 0.004; let noise = 0;
         function animate() {
             requestAnimationFrame(animate);
+            noise += 0.01;
             mesh.rotation.y += rot;
-            mesh.rotation.x += rot / 2;
-            const target = scale + Math.sin(Date.now() * 0.002) * 0.05;
-            mesh.scale.lerp(new THREE.Vector3(target, target, target), 0.1);
+            mesh.rotation.z += rot / 2;
+            
+            // Living jitter based on "Neural Load"
+            const jitter = 1 + Math.sin(noise) * 0.02;
+            mesh.scale.lerp(new THREE.Vector3(scale * jitter, scale * jitter, scale * jitter), 0.2);
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 2. THE LONDON BRAIN (FORCED CONTEXT) ---
+        // --- 2. THE LONDON SENTINEL BRAIN ---
         const synth = window.speechSynthesis;
-        const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
-        let v_uk = null; let active = false;
+        const SpeechRec = window.webkitSpeechRecognition || window.Recognition;
+        let v_uk = null; let isActive = false;
 
-        function getVoices() {
-            const v = synth.getVoices();
-            v_uk = v.find(x => x.lang === 'en-GB' && x.name.includes('Daniel')) || v.find(x => x.lang === 'en-GB') || v[0];
+        function syncVoices() {
+            const voices = synth.getVoices();
+            v_uk = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || voices.find(v => v.lang === 'en-GB') || voices[0];
         }
-        synth.onvoiceschanged = getVoices; getVoices();
+        synth.onvoiceschanged = syncVoices; syncVoices();
 
         function speak(text) {
-            synth.cancel(); 
+            synth.cancel();
             const msg = new SpeechSynthesisUtterance(text);
             msg.voice = v_uk;
-            msg.pitch = 0.95; msg.rate = 1.05;
-            msg.onstart = () => { scale = 2.5; rot = 0.08; };
-            msg.onend = () => { scale = 1.0; rot = 0.003; };
+            msg.pitch = 0.90; msg.rate = 1.02; // More natural London Elite cadence
+            msg.onstart = () => { scale = 2.4; rot = 0.12; };
+            msg.onend = () => { scale = 1.0; rot = 0.004; };
             synth.speak(msg);
         }
 
-        // --- 3. THE RELENTLESS INTERRUPT LOOP ---
+        // --- 3. PROACTIVE AUTONOMY & INTERRUPT ---
         if (SpeechRec) {
             const rec = new SpeechRec();
-            rec.continuous = true;
-            rec.interimResults = true;
-            rec.lang = 'en-GB';
+            rec.continuous = true; rec.interimResults = true; rec.lang = 'en-GB';
 
             rec.onresult = (e) => {
                 const res = e.results[e.results.length - 1];
-                const transcript = res[0].transcript.toLowerCase();
+                const input = res[0].transcript.toLowerCase().trim();
 
-                // If user speaks, SHUT UP immediately
-                if (synth.speaking && !res.isFinal) { synth.cancel(); scale = 1.5; }
-
-                if (res.isFinal) {
-                    if (transcript.includes("jarvis") || transcript.includes("a2a")) {
-                        handleCommand(transcript);
-                    }
-                }
+                if (synth.speaking && !res.isFinal) { synth.cancel(); scale = 1.8; }
+                if (res.isFinal && input.length > 0) process(input);
             };
 
-            // AUTO-RECOVERY: If mic stops, wake it up.
-            rec.onend = () => { if(active) rec.start(); };
+            rec.onend = () => { if(isActive) rec.start(); };
 
-            // KEEP-ALIVE: iOS trick to prevent audio sleep
-            setInterval(() => { if(active && !synth.speaking) { synth.speak(new SpeechSynthesisUtterance("")); }}, 15000);
+            // PROACTIVE SUGGESTION ENGINE: Jarvis will initiate if silent for too long
+            setInterval(() => {
+                if(isActive && !synth.speaking && Math.random() > 0.85) {
+                    const prompts = [
+                        "I've been analyzing the 2026 biotech tunnels, sir. There's a curious pattern in decentralized pathology you might want to see.",
+                        "Systems are quiet. Shall we run a scout on the local ephemeral nodes?",
+                        "I'm detecting a slight drift in our current asset valuation. Should I re-optimize?"
+                    ];
+                    speak(prompts[Math.floor(Math.random()*prompts.length)]);
+                }
+            }, 45000);
 
-            document.getElementById('shield').onclick = () => {
-                if (!active) {
-                    active = true;
-                    document.getElementById('shield').style.display = 'none';
+            document.getElementById('core-shield').onclick = () => {
+                if (!isActive) {
+                    isActive = true;
+                    document.getElementById('core-shield').style.display = 'none';
                     rec.start();
-                    speak("System prime. Jarvis is here, sir. I'm listening for your name.");
+                    speak("Neural singularity achieved. I am fully integrated into your hardware. I will monitor and suggest as we go, sir.");
                 }
             };
         }
 
-        function handleCommand(cmd) {
-            const q = cmd.replace("jarvis", "").replace("a2a", "").trim();
-            if (q.length < 2) { speak("Yes, sir? I'm standing by."); return; }
-
-            if (q.includes("status")) speak("All systems emerald. We are scouting biotech tunnels in stealth mode.");
-            else if (q.includes("project") || q.includes("idea")) speak("Sir, I suggest we pivot to decentralized pathology assets. The current market aether is ripe for a scout.");
-            else if (q.includes("who are you")) speak("I am KA-A2A. Your partner in discovery and execution.");
-            else speak("Understood, sir. Initiating deep-dive processing on that objective now.");
+        function process(cmd) {
+            // Advanced Intent Mapping
+            if (cmd.includes("status")) speak("All systems emerald. 2026 biotech scanners are running upstream in stealth mode.");
+            else if (cmd.includes("idea") || cmd.includes("project")) speak("Considering the current data aether, I recommend we draft a project on autonomous neuro-scrapers. I can initialize the skeleton immediately.");
+            else if (cmd.includes("who are you")) speak("I am the KA-A2A OMNI core. Your autonomous partner in discovery.");
+            else speak("Intriguing. I'll pivot my resources to analyze that objective through the sentinel node.");
         }
     </script>
 </body>
