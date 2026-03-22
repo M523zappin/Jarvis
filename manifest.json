@@ -1,19 +1,9 @@
 {
-  "name": "KA-A2A OMNI",
-  "short_name": "A2A",
-  "description": "Autonomous Interruptible Intelligence Core",
-  "start_url": "index.html?v=5.1-interruption",
+  "name": "KA-A2A OMNI-PHANTOM",
+  "short_name": "JARVIS",
+  "start_url": "index.html?v=7.0",
   "display": "standalone",
-  "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "icons": [
-    {
-      "src": "icon.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "categories": ["productivity", "utilities"]
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
 }
