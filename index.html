@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>KA-A2A CORE</title>
+    <style>
+        body { background: #000; color: #00FF41; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        #canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        .ui-layer { z-index: 10; text-align: center; pointer-events: none; text-shadow: 0 0 10px #00FF41; }
+        .status { font-size: 10px; color: #003B00; margin-top: 10px; text-transform: uppercase; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="ui-layer">
+        <h1 style="letter-spacing: 5px;">KA-A2A</h1>
+        <div class="status" id="log">SYSTEM: STABLE // TIER-1 ACTIVE</div>
+    </div>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            const time = Date.now() * 0.002;
+            ctx.beginPath();
+            ctx.arc(canvas.width/2, canvas.height/2, 100 + Math.sin(time)*15, 0, Math.PI*2);
+            ctx.strokeStyle = '#00FF41';
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00FF41';
+            ctx.stroke();
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+</body>
+</html>
