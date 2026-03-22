@@ -1,17 +1,9 @@
-const CACHE_NAME = 'ka-a2a-v4.0';
-const ASSETS = ['./', './index.html', './manifest.json'];
-
-self.addEventListener('install', (e) => {
+const VERSION = 'a2a-4.1-elite';
+self.addEventListener('install', e => {
   self.skipWaiting();
-  e.waitUntil(caches.open(CACHE_NAME).then((c) => c.addAll(ASSETS)));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(['./', './index.html', './manifest.json'])));
 });
-
-self.addEventListener('activate', (e) => {
-  e.waitUntil(caches.keys().then((keys) => {
-    return Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
-  }));
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))));
 });
-
-self.addEventListener('fetch', (e) => {
-  e.respondWith(caches.match(e.request).then((res) => res || fetch(e.request)));
-});
+self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
