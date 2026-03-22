@@ -1,4 +1,4 @@
-const VERSION = 'a2a-4.1-elite';
+const VERSION = 'a2a-5.0-phantom';
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(['./', './index.html', './manifest.json'])));
