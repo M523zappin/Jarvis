@@ -1,41 +1,129 @@
-// --- VOICE-CORE INITIALIZATION ---
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-const recognition = new SpeechRecognition();
-const synth = window.speechSynthesis;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <title>KA-A2A CORE</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; color: #00FF41; }
+        #hud-top { position: absolute; top: 40px; left: 20px; z-index: 10; pointer-events: none; text-shadow: 0 0 10px #00FF41; }
+        #terminal { 
+            position: absolute; bottom: 30px; left: 20px; width: calc(100% - 40px); 
+            height: 120px; font-size: 11px; background: rgba(0,20,0,0.85); 
+            padding: 10px; border: 1px solid #00FF41; overflow-y: hidden; 
+            box-shadow: 0 0 15px rgba(0,255,65,0.2); z-index: 10;
+        }
+        .glitch { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+        canvas { display: block; filter: contrast(120%) brightness(110%); }
+    </style>
+</head>
+<body>
+    <div id="hud-top">
+        <h2 style="margin:0; letter-spacing:4px;" class="glitch">KA-A2A // GENESIS</h2>
+        <div id="protocol-status" style="font-size:10px; margin-top:5px;">[PROTOCOL]: ASDV_ACTIVE_GHOST_MODE</div>
+    </div>
+    <div id="terminal">> INITIALIZING NEURAL BRIDGE...<br>> SENTINEL AUDIT: SUCCESSFUL<br>> AWAITING VOICE COMMAND...</div>
 
-recognition.continuous = true; // Stay listening
-recognition.interimResults = false; // Only process final sentences
-recognition.lang = 'en-US';
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // --- 1. THE EMERALD CORE (3D Visuals) ---
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
 
-// Start listening when you tap the screen
-document.body.onclick = () => {
-    recognition.start();
-    speak("KA-A2A Voice Link Established. I am listening.");
-};
+        // Spherical Wireframe (The Eye of Jarvis)
+        const geometry = new THREE.SphereGeometry(2, 32, 32);
+        const material = new THREE.MeshBasicMaterial({ 
+            color: 0x00FF41, wireframe: true, transparent: true, opacity: 0.4 
+        });
+        const sphere = new THREE.Mesh(geometry, material);
+        scene.add(sphere);
 
-recognition.onresult = (event) => {
-    const transcript = event.results[event.results.length - 1][0].transcript.trim().toLowerCase();
-    document.getElementById('log').innerHTML = `[USER]: ${transcript}`;
-    
-    // JARVIS LOGIC: Respond to specific intents
-    if (transcript.includes("status")) {
-        speak("All systems emerald. ASDV protocol is scouting ghost tunnels.");
-    } else if (transcript.includes("evolve")) {
-        speak("Initiating recursive research loop. Scanning for logic patches.");
-    } else {
-        speak("Command received. Processing intent.");
-    }
-};
+        // Inner core glow
+        const innerGeo = new THREE.IcosahedronGeometry(1.2, 1);
+        const innerMat = new THREE.MeshBasicMaterial({ color: 0x00FF41, wireframe: true, transparent: true, opacity: 0.1 });
+        const innerSphere = new THREE.Mesh(innerGeo, innerMat);
+        scene.add(innerSphere);
 
-// Jarvis Voice Synthesis
-function speak(text) {
-    const utterance = new THREE.Audio(listener); // Optional: Link to 3D audio
-    const msg = new SpeechSynthesisUtterance(text);
-    msg.rate = 1.1; // Slightly faster for a tech-feel
-    msg.pitch = 0.8; // Lower pitch for a more robotic/advanced tone
-    synth.speak(msg);
-    document.getElementById('log').innerHTML += `<br>[JARVIS]: ${text}`;
-}
+        camera.position.z = 5;
 
-// Auto-restart if it times out
-recognition.onend = () => { recognition.start(); };
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = Date.now() * 0.001;
+            sphere.rotation.y += 0.003;
+            sphere.rotation.x += 0.001;
+            innerSphere.rotation.y -= 0.005;
+            
+            // Pulsing effect
+            const pulse = 1 + Math.sin(time * 2) * 0.08;
+            sphere.scale.set(pulse, pulse, pulse);
+            
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // --- 2. VOICE & AUTONOMOUS LOGIC ---
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const synth = window.speechSynthesis;
+
+        if (SpeechRecognition) {
+            const recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.lang = 'en-US';
+
+            document.body.onclick = () => {
+                recognition.start();
+                updateTerminal("VOICE LINK: ESTABLISHED");
+                speak("KA A2A Genesis online. Ready for autonomous instruction.");
+            };
+
+            recognition.onresult = (event) => {
+                const input = event.results[event.results.length - 1][0].transcript.toLowerCase();
+                updateTerminal("USER: " + input);
+
+                if (input.includes("status") || input.includes("report")) {
+                    speak("All systems emerald. ASDV protocol is scouting ghost tunnels. RRL loop is active.");
+                } else if (input.includes("evolve")) {
+                    updateTerminal("INITIATING RECURSIVE RESEARCH LOOP...");
+                    speak("Scanning for logic patches. Memory compression enabled.");
+                } else if (input.includes("ghost")) {
+                    speak("Engaging ephemeral tunnel for stealth discovery.");
+                }
+            };
+
+            recognition.onend = () => { recognition.start(); }; // Keep it alive
+        }
+
+        function updateTerminal(msg) {
+            const term = document.getElementById('terminal');
+            term.innerHTML += `<br>> ${msg.toUpperCase()}`;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.pitch = 0.7; // Deep, advanced tone
+            utterance.rate = 1.0;
+            synth.speak(utterance);
+            updateTerminal("JARVIS: " + text);
+        }
+
+        // --- 3. PWA SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
