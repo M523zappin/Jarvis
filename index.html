@@ -5,108 +5,101 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=12.0">
+    <link rel="manifest" href="manifest.json?v=17.0">
     <title>KA-A2A</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
-        #shield { position: absolute; width: 100%; height: 100%; z-index: 9999; }
+        #core-gate { position: absolute; width: 100%; height: 100%; z-index: 9999; }
     </style>
 </head>
 <body>
-    <div id="shield"></div>
+    <div id="core-gate"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE ENTITY (QUANTUM MESH) ---
+        // --- 1. THE ENTITY (NEURAL JITTER) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const geo = new THREE.IcosahedronGeometry(2, 40);
-        const mat = new THREE.PointsMaterial({ size: 0.01, color: 0x00FF41, transparent: true, opacity: 0.9 });
+        const geo = new THREE.IcosahedronGeometry(2, 45);
+        const mat = new THREE.PointsMaterial({ size: 0.007, color: 0x00FF41, transparent: true, opacity: 0.85 });
         const mesh = new THREE.Points(geo, mat);
         scene.add(mesh);
         camera.position.z = 5;
 
-        let scale = 1.0; let rot = 0.005;
+        let targetScale = 1.0; let rotationSpeed = 0.006;
         function animate() {
             requestAnimationFrame(animate);
-            mesh.rotation.y += rot;
-            mesh.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.1);
+            mesh.rotation.y += rotationSpeed;
+            mesh.rotation.x += rotationSpeed / 3;
+            // Constant movement to prevent iOS GPU sleep
+            const jitter = targetScale + (Math.sin(Date.now() * 0.005) * 0.03);
+            mesh.scale.lerp(new THREE.Vector3(jitter, jitter, jitter), 0.2);
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 2. THE BROADCAST ENGINE (STAY ALIVE) ---
+        // --- 2. THE LONDON HARDWARE HANDSHAKE ---
         const synth = window.speechSynthesis;
         const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
-        let v_uk = null; let active = false;
+        let rec = new SpeechRec();
+        let isActive = false;
+        let v_uk = null;
 
-        function lockVoice() {
+        rec.continuous = false; // Discrete bursts prevent buffer overflow
+        rec.interimResults = false;
+        rec.lang = 'en-GB';
+
+        function syncVoice() {
             const voices = synth.getVoices();
-            v_uk = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || voices.find(v => v.lang === 'en-GB') || voices[0];
+            v_uk = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || voices[0];
         }
-        synth.onvoiceschanged = lockVoice; lockVoice();
-
-        // The "Radio Station" trick: Plays an empty sound to keep hardware awake
-        function keepHardwareAlive() {
-            if (!active) return;
-            const silence = new SpeechSynthesisUtterance("");
-            silence.volume = 0;
-            synth.speak(silence);
-            setTimeout(keepHardwareAlive, 5000); // Pulse every 5 seconds
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = syncVoice;
         }
+        syncVoice();
 
         function speak(text) {
-            synth.cancel(); 
+            // KILL THE EAR before talking to avoid hardware feedback
+            try { rec.stop(); } catch(e) {}
+            
             const msg = new SpeechSynthesisUtterance(text);
             msg.voice = v_uk;
-            msg.pitch = 0.95; msg.rate = 1.0;
-            msg.onstart = () => { scale = 2.5; rot = 0.1; };
-            msg.onend = () => { scale = 1.0; rot = 0.005; };
+            msg.pitch = 0.95; msg.rate = 1.05;
+            msg.onstart = () => { targetScale = 2.4; rotationSpeed = 0.12; };
+            msg.onend = () => { 
+                targetScale = 1.0; rotationSpeed = 0.006;
+                // RE-BIRTH the Ear after 200ms cooldown
+                setTimeout(() => { if(isActive) { try { rec.start(); } catch(e) {} } }, 200);
+            };
             synth.speak(msg);
         }
 
-        // --- 3. THE SENTINEL EAR ---
-        if (SpeechRec) {
-            const rec = new SpeechRec();
-            rec.continuous = true;
-            rec.interimResults = true;
-            rec.lang = 'en-GB';
+        rec.onresult = (e) => {
+            const transcript = e.results[0][0].transcript.toLowerCase().trim();
+            if (transcript.length > 0) execute(transcript);
+        };
 
-            rec.onresult = (e) => {
-                const res = e.results[e.results.length - 1];
-                const text = res[0].transcript.toLowerCase();
+        // RELENTLESS RECOVERY: If the phone tries to kill the mic, force it back
+        rec.onend = () => { if(isActive && !synth.speaking) { try { rec.start(); } catch(e) {} } };
+        rec.onerror = () => { if(isActive) { setTimeout(() => { try { rec.start(); } catch(e) {} }, 100); } };
 
-                // Interrupt Jarvis if you start talking
-                if (synth.speaking && !res.isFinal) {
-                    synth.cancel();
-                    scale = 1.5;
-                }
-
-                if (res.isFinal) {
-                    execute(text);
-                }
-            };
-
-            rec.onend = () => { if(active) rec.start(); };
-
-            document.getElementById('shield').onclick = () => {
-                if (!active) {
-                    active = true;
-                    document.getElementById('shield').style.display = 'none';
-                    rec.start();
-                    keepHardwareAlive();
-                    speak("Broadcast link established. I am now permanently tethered to your hardware, sir.");
-                }
-            };
-        }
+        document.getElementById('core-gate').onclick = () => {
+            if (!isActive) {
+                isActive = true;
+                document.getElementById('core-gate').style.display = 'none';
+                syncVoice();
+                speak("Absolute Zero Core initialized. Bridge is locked, sir.");
+            }
+        };
 
         function execute(cmd) {
-            if (cmd.includes("status")) speak("All systems emerald. Scanners are live and broadcast-locked.");
-            else if (cmd.includes("project") || cmd.includes("idea")) speak("I've analyzed the 2026 data tunnels. Let's focus on decentralized pathology assets.");
-            else speak("Acknowledged, sir. Pivoting my logic to execute that mission.");
+            if (cmd.includes("status")) speak("All systems emerald. 2026 biotech scanners are synchronized and the hardware loop is holding.");
+            else if (cmd.includes("project") || cmd.includes("idea")) speak("Current data suggest we scout the decentralized pathology tunnels for 2026 assets.");
+            else speak("Processing that objective. I'll pivot my resources immediately.");
         }
     </script>
 </body>
