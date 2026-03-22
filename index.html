@@ -2,105 +2,283 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=17.0">
-    <title>KA-A2A</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA: Self-Augmenting AI Assistant</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
-        #core-gate { position: absolute; width: 100%; height: 100%; z-index: 9999; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            font-family: 'Arial', sans-serif;
+            background-color: #0a0a0f;
+            color: #fff;
+        }
+
+        /* Aesthetic for chat panel */
+        .chat-panel {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 300px;
+            max-height: 80vh;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .chat-history {
+            overflow-y: auto;
+            flex-grow: 1;
+            margin-bottom: 10px;
+            padding-right: 10px;
+        }
+
+        .chat-history .message {
+            margin-bottom: 12px;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        .chat-history .message.user {
+            color: #00f3ff;
+        }
+
+        .chat-history .message.aura {
+            color: #b300ff;
+        }
+
+        .input-container {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .input-field {
+            flex-grow: 1;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 16px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .send-button {
+            padding: 8px 15px;
+            background-color: #b300ff;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .send-button:focus {
+            outline: none;
+        }
+
+        .microphone-btn {
+            padding: 8px;
+            background-color: #00f3ff;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            cursor: pointer;
+        }
+
+        .microphone-btn:focus {
+            outline: none;
+        }
+
+        /* Graph container */
+        #graph-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Loading animation */
+        .loading-node {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #b300ff;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.5);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Responsiveness */
+        @media screen and (max-width: 768px) {
+            .chat-panel {
+                width: 100%;
+                bottom: 0;
+            }
+
+            #graph-container {
+                height: 60%;
+            }
+        }
     </style>
 </head>
 <body>
-    <div id="core-gate"></div>
+    <div id="graph-container"></div>
+    <div class="chat-panel">
+        <div class="chat-history" id="chat-history"></div>
+        <div class="input-container">
+            <input id="input-field" class="input-field" type="text" placeholder="Ask me anything..." />
+            <button class="send-button" onclick="sendMessage()">Send</button>
+            <button class="microphone-btn" onclick="startVoiceInput()">🎙️</button>
+        </div>
+    </div>
+
+    <!-- Loading Node -->
+    <div id="loading-node" class="loading-node" style="display: none;"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
     <script>
-        // --- 1. THE ENTITY (NEURAL JITTER) ---
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        let scene, camera, renderer, graph, nodes = [], edges = [];
+        let isThinking = false;
+        let userMessage = "";
 
-        const geo = new THREE.IcosahedronGeometry(2, 45);
-        const mat = new THREE.PointsMaterial({ size: 0.007, color: 0x00FF41, transparent: true, opacity: 0.85 });
-        const mesh = new THREE.Points(geo, mat);
-        scene.add(mesh);
-        camera.position.z = 5;
+        // Set up the 3D Graph
+        function setupGraph() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('graph-container').appendChild(renderer.domElement);
 
-        let targetScale = 1.0; let rotationSpeed = 0.006;
+            let light = new THREE.PointLight(0xffffff, 1, 100);
+            light.position.set(0, 0, 50);
+            scene.add(light);
+
+            // Create nodes and edges
+            for (let i = 0; i < 20; i++) {
+                let geometry = new THREE.SphereGeometry(0.3, 32, 32);
+                let material = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff });
+                let node = new THREE.Mesh(geometry, material);
+                node.position.set(Math.random() * 20 - 10, Math.random() * 20 - 10, Math.random() * 20 - 10);
+                scene.add(node);
+                nodes.push(node);
+            }
+
+            animate();
+        }
+
+        // Animate the graph
         function animate() {
             requestAnimationFrame(animate);
-            mesh.rotation.y += rotationSpeed;
-            mesh.rotation.x += rotationSpeed / 3;
-            // Constant movement to prevent iOS GPU sleep
-            const jitter = targetScale + (Math.sin(Date.now() * 0.005) * 0.03);
-            mesh.scale.lerp(new THREE.Vector3(jitter, jitter, jitter), 0.2);
             renderer.render(scene, camera);
         }
-        animate();
 
-        // --- 2. THE LONDON HARDWARE HANDSHAKE ---
-        const synth = window.speechSynthesis;
-        const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
-        let rec = new SpeechRec();
-        let isActive = false;
-        let v_uk = null;
+        // Send message
+        function sendMessage() {
+            userMessage = document.getElementById('input-field').value;
+            if (!userMessage) return;
 
-        rec.continuous = false; // Discrete bursts prevent buffer overflow
-        rec.interimResults = false;
-        rec.lang = 'en-GB';
+            document.getElementById('input-field').value = '';
+            displayMessage(userMessage, 'user');
+            startThinkingAnimation();
 
-        function syncVoice() {
-            const voices = synth.getVoices();
-            v_uk = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || voices[0];
+            // Simulate AI thinking and response
+            setTimeout(() => {
+                displayMessage("Based on your habits, I suggest focusing on " + generateRandomResponse(), 'aura');
+                updateGraph();
+            }, 3000);
         }
-        if (speechSynthesis.onvoiceschanged !== undefined) {
-            speechSynthesis.onvoiceschanged = syncVoice;
-        }
-        syncVoice();
 
-        function speak(text) {
-            // KILL THE EAR before talking to avoid hardware feedback
-            try { rec.stop(); } catch(e) {}
-            
-            const msg = new SpeechSynthesisUtterance(text);
-            msg.voice = v_uk;
-            msg.pitch = 0.95; msg.rate = 1.05;
-            msg.onstart = () => { targetScale = 2.4; rotationSpeed = 0.12; };
-            msg.onend = () => { 
-                targetScale = 1.0; rotationSpeed = 0.006;
-                // RE-BIRTH the Ear after 200ms cooldown
-                setTimeout(() => { if(isActive) { try { rec.start(); } catch(e) {} } }, 200);
+        // Display message in chat
+        function displayMessage(message, sender) {
+            const chatHistory = document.getElementById('chat-history');
+            const msgElement = document.createElement('div');
+            msgElement.className = `message ${sender}`;
+            msgElement.innerHTML = message;
+            chatHistory.appendChild(msgElement);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // Start thinking animation
+        function startThinkingAnimation() {
+            document.getElementById('loading-node').style.display = 'block';
+            isThinking = true;
+        }
+
+        // Stop thinking animation
+        function stopThinkingAnimation() {
+            document.getElementById('loading-node').style.display = 'none';
+            isThinking = false;
+        }
+
+        // Generate random response for demo
+        function generateRandomResponse() {
+            const responses = ["Focus", "Tools", "Routine", "Time Management", "Mindfulness"];
+            return responses[Math.floor(Math.random() * responses.length)];
+        }
+
+        // Update Graph with new nodes and edges
+        function updateGraph() {
+            if (!isThinking) return;
+
+            let newNode = new THREE.Mesh(new THREE.SphereGeometry(0.3, 32, 32), new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff }));
+            newNode.position.set(Math.random() * 20 - 10, Math.random() * 20 - 10, Math.random() * 20 - 10);
+            scene.add(newNode);
+            nodes.push(newNode);
+
+            stopThinkingAnimation();
+        }
+
+        // Voice input using Web Speech API
+        function startVoiceInput() {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.onresult = function(event) {
+                const voiceMessage = event.results[0][0].transcript;
+                document.getElementById('input-field').value = voiceMessage;
+                sendMessage();
             };
-            synth.speak(msg);
+            recognition.start();
         }
 
-        rec.onresult = (e) => {
-            const transcript = e.results[0][0].transcript.toLowerCase().trim();
-            if (transcript.length > 0) execute(transcript);
-        };
-
-        // RELENTLESS RECOVERY: If the phone tries to kill the mic, force it back
-        rec.onend = () => { if(isActive && !synth.speaking) { try { rec.start(); } catch(e) {} } };
-        rec.onerror = () => { if(isActive) { setTimeout(() => { try { rec.start(); } catch(e) {} }, 100); } };
-
-        document.getElementById('core-gate').onclick = () => {
-            if (!isActive) {
-                isActive = true;
-                document.getElementById('core-gate').style.display = 'none';
-                syncVoice();
-                speak("Absolute Zero Core initialized. Bridge is locked, sir.");
-            }
-        };
-
-        function execute(cmd) {
-            if (cmd.includes("status")) speak("All systems emerald. 2026 biotech scanners are synchronized and the hardware loop is holding.");
-            else if (cmd.includes("project") || cmd.includes("idea")) speak("Current data suggest we scout the decentralized pathology tunnels for 2026 assets.");
-            else speak("Processing that objective. I'll pivot my resources immediately.");
-        }
+        // Initialize the graph and interface
+        setupGraph();
     </script>
 </body>
 </html>
