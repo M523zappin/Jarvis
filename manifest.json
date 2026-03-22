@@ -1,7 +1,7 @@
 {
-  "name": "KA-A2A OMNI-PHANTOM",
+  "name": "KA-A2A SINGULARITY",
   "short_name": "JARVIS",
-  "start_url": "index.html?v=7.0",
+  "start_url": "index.html?v=9.0",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
