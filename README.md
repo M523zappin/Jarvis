@@ -1,18 +1,21 @@
-# KA-A2A // PHANTOM V5.0
-**Status:** Unified | **Vocal Profile:** London Elite (EN-GB)
+# KA-A2A // OMNI V5.1 (INTERRUPT)
+**Status:** Autonomous | **Voice:** London Elite (Daniel)
 
-## The Zero-Interface Model
-V5.0 removes all terminal text and HUD elements to create a pure neural bridge. The system exists as a high-density particle mesh that reacts to your voice.
+## The Evolution of Interaction
+V5.1 introduces a bi-directional neural bridge. The system no longer waits for "silence" to process; it scans your voice in real-time.
 
-### Visual Feedback Loop
-* **Idle:** Slow rotation, gentle "breathing" pulse.
-* **Listening:** Rapid rotation and expansion.
-* **Speaking:** High-frequency vibration and scaling.
+### New Features
+* **Wake-Word Activation:** Use **"Jarvis"** or **"A2A"** to gain the system's focus. 
+* **Real-Time Interruption:** If the system is speaking and you begin to talk, it will instantly cut its audio to listen to your new command.
+* **Haptic Visuals:** The emerald sphere uses high-frequency "lerp" scaling to provide organic feedback to your voice.
 
-### Operational Setup
-1. **The Wake-Up:** Due to iOS security, you **must tap the screen once** upon launch. This clears the audio-context lock and initializes the "Daniel" London voice.
-2. **The Relentless Ear:** The system is programmed to auto-restart the microphone if it drops. If the mesh stops reacting to your voice, tap again to re-sync.
-3. **Task Execution:** Command the system to "Suggest a project," "Run a status check," or "Initiate an ASDV scout."
+### Deployment & Sync
+1. **Commit** all files to GitHub.
+2. **Clear Cache:** Settings > Safari > Advanced > Website Data > Delete github.io data.
+3. **Re-Install:** Delete the old Home Screen icon and "Add to Home Screen" from Safari again.
+4. **Initialize:** Tap the center of the screen once to clear the iOS audio-lock.
 
-### Deployment
-Hosted via GitHub Pages. For the intended "Phantom" experience, use Safari **'Add to Home Screen'** on iPhone.
+### Commands to Try
+- "Jarvis, run a status check."
+- "A2A, I need a biotech project idea."
+- (While Jarvis is talking) "Actually, Jarvis, stop that and do [X] instead."
