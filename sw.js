@@ -1,4 +1,4 @@
-const CACHE = 'a2a-v5.1-interruption';
+const CACHE = 'a2a-v6.0-omni';
 self.addEventListener('install', e => {
   self.skipWaiting();
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.json'])));
