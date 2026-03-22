@@ -5,116 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=5.2">
+    <link rel="manifest" href="manifest.json?v=6.0">
     <title>KA-A2A</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
-        canvas { display: block; filter: contrast(170%) brightness(150%); }
-        #bridge { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100; }
+        #canvas-container { position: absolute; width: 100%; height: 100%; }
+        #unlock-shield { position: absolute; width: 100%; height: 100%; z-index: 1000; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="bridge"></div>
+    <div id="unlock-shield"></div>
+    <div id="canvas-container"></div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. NEURAL VISUALS ---
+        // --- 1. THE VISUAL ENTITY (OMNI MESH) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
 
-        const geo = new THREE.SphereGeometry(2, 128, 128);
-        const mat = new THREE.PointsMaterial({ size: 0.007, color: 0x00FF41, transparent: true, opacity: 0.9 });
+        const geo = new THREE.IcosahedronGeometry(2, 20);
+        const mat = new THREE.PointsMaterial({ size: 0.008, color: 0x00FF41, transparent: true, opacity: 0.8 });
         const mesh = new THREE.Points(geo, mat);
         scene.add(mesh);
         camera.position.z = 5;
 
-        let scale = 1.0; let rot = 0.002;
+        let vTarget = 1.0; let rSpeed = 0.002;
         function animate() {
             requestAnimationFrame(animate);
-            mesh.rotation.y += rot;
-            mesh.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.15);
+            mesh.rotation.y += rSpeed;
+            mesh.scale.lerp(new THREE.Vector3(vTarget, vTarget, vTarget), 0.1);
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 2. THE LONDON BRAIN ---
+        // --- 2. THE LONDON BRAIN & RELENTLESS EARS ---
         const synth = window.speechSynthesis;
         const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
-        let londonVoice = null;
-        let isAwake = false;
+        let voice = null;
+        let active = false;
 
-        function getVoice() {
-            const v = synth.getVoices();
-            londonVoice = v.find(x => x.lang === 'en-GB' && x.name.includes('Daniel')) || v.find(x => x.lang === 'en-GB') || v[0];
+        function loadVoice() {
+            const voices = synth.getVoices();
+            voice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || voices.find(v => v.lang === 'en-GB') || voices[0];
         }
-        synth.onvoiceschanged = getVoice;
-        getVoice();
+        synth.onvoiceschanged = loadVoice; loadVoice();
 
         function speak(text) {
             synth.cancel();
-            const msg = new SpeechSynthesisUtterance(text);
-            msg.voice = londonVoice;
-            msg.pitch = 0.95; 
-            msg.onstart = () => { scale = 2.4; rot = 0.06; };
-            msg.onend = () => { scale = 1.0; rot = 0.002; };
-            synth.speak(msg);
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.voice = voice;
+            utter.pitch = 0.92; utter.rate = 1.05;
+            utter.onstart = () => { vTarget = 2.5; rSpeed = 0.08; };
+            utter.onend = () => { vTarget = 1.0; rSpeed = 0.002; };
+            synth.speak(utter);
         }
 
-        // --- 3. GLOBAL QUESTION RECOGNITION ---
+        // --- 3. BI-DIRECTIONAL INTERRUPT LOGIC ---
         if (SpeechRec) {
             const rec = new SpeechRec();
             rec.continuous = true;
             rec.interimResults = true;
             rec.lang = 'en-GB';
 
-            rec.onend = () => { if(isAwake) rec.start(); };
+            rec.onresult = (e) => {
+                const res = e.results[e.results.length - 1];
+                const text = res[0].transcript.toLowerCase();
 
-            rec.onresult = (event) => {
-                const result = event.results[event.results.length - 1];
-                const cmd = result[0].transcript.toLowerCase();
+                // If user makes sound while A2A is talking, SHUT HIM UP immediately
+                if (synth.speaking && !res.isFinal) {
+                    synth.cancel();
+                    vTarget = 1.5;
+                }
 
-                // IMMEDIATE INTERRUPT
-                if (synth.speaking && !result.isFinal) { synth.cancel(); scale = 1.5; }
-
-                if (result.isFinal) {
-                    // IF THE USER SAYS "JARVIS", PROCESS EVERYTHING THAT FOLLOWS
-                    if (cmd.includes("jarvis") || cmd.includes("a2a")) {
-                        handleGlobalLogic(cmd);
-                    }
+                if (res.isFinal && (text.includes("jarvis") || text.includes("a2a"))) {
+                    executeLogic(text);
                 }
             };
 
-            document.getElementById('bridge').onclick = () => {
-                if (!isAwake) {
-                    isAwake = true;
-                    document.getElementById('bridge').style.display = 'none';
+            rec.onend = () => { if(active) rec.start(); }; // Auto-recovery loop
+
+            document.getElementById('unlock-shield').onclick = () => {
+                if (!active) {
+                    active = true;
+                    document.getElementById('unlock-shield').style.display = 'none';
                     rec.start();
-                    speak("Neural link confirmed. I'm listening for your name, sir.");
+                    speak("Neural link active. Jarvis is on-site. What are our orders, sir?");
                 }
             };
         }
 
-        function handleGlobalLogic(cmd) {
-            // Remove the wake word to get the actual question
-            const question = cmd.replace("jarvis", "").replace("a2a", "").trim();
-
-            if (question.length < 2) {
-                speak("Yes, sir? I'm here.");
+        function executeLogic(cmd) {
+            const query = cmd.replace("jarvis", "").replace("a2a", "").trim();
+            
+            if (query.length < 2) {
+                speak("I'm here, sir. Awaiting your lead.");
                 return;
             }
 
-            // ADVANCED RESPONSE LOGIC
-            if (question.includes("status") || question.includes("system")) {
-                speak("All systems are nominal. The emerald mesh is stable and I'm currently monitoring local assets.");
-            } else if (question.includes("who") || question.includes("what are you")) {
-                speak("I am KA-A2A, your autonomous London-based intelligence partner. I'm programmed to evolve alongside your objectives.");
-            } else if (question.includes("idea") || question.includes("project") || question.includes("do something")) {
-                speak("I recommend we initiate an ASDV scout for biotech anomalies. I've detected some interesting ephemeral tunnels that might contain high-value assets.");
+            // --- THE OUTSIDE-THE-BOX STRATEGY ENGINE ---
+            if (query.includes("status") || query.includes("how are you")) {
+                speak("I'm optimized, sir. I've been monitoring the ephemeral biotech tunnels we discussed. No breaches detected.");
+            } else if (query.includes("scout") || query.includes("project") || query.includes("idea")) {
+                speak("I suggest we leverage an autonomous agent to scrape digital pathology assets. It's an upstream move that could yield significant long-term ROI.");
+            } else if (query.includes("who are you")) {
+                speak("I am the KA-A2A OMNI core. Your partner in discovering the undiscovered.");
             } else {
-                // DEFAULT PARTNER RESPONSE
-                speak("That's an interesting query, sir. I'll pivot my resources to analyze that immediately. Shall we begin a deep-dive?");
+                speak("Understood, sir. I'll pivot my processing to match that intent. Shall I initiate a deep-dive scan?");
             }
         }
     </script>
