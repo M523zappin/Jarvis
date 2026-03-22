@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json">
-    <title>KA-A2A GENESIS</title>
+    <link rel="manifest" href="manifest.json?v=2.6">
+    <title>KA-A2A CORE</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; color: #00FF41; }
         #hud-top { position: absolute; top: 60px; left: 30px; z-index: 10; pointer-events: none; text-shadow: 0 0 15px #00FF41; }
@@ -22,13 +22,13 @@
 <body>
     <div id="hud-top">
         <h2 style="margin:0; letter-spacing:8px; font-weight:100;">KA-A2A // ALPHA</h2>
-        <div style="font-size:8px; opacity:0.6; margin-top:5px;">NEURAL_LOAD: 14.2% | LINGUISTIC: EN-GB_ELITE</div>
+        <div style="font-size:8px; opacity:0.6; margin-top:5px;">NEURAL_LOAD: 14.2% | LINGUISTIC: EN-GB_LONDON</div>
     </div>
-    <div id="terminal">> CORE NEURAL MESH: STABLE<br>> VOICELINE: LONDON_DISTRICT_4<br>> AWAITING SIR'S COMMAND...</div>
+    <div id="terminal">> CORE NEURAL MESH: V2.6 ONLINE<br>> LINGUISTIC_CORE: LONDON_DISTRICT_4<br>> AWAITING SIR'S COMMAND...</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE NEURAL POINT-CLOUD (Advanced Visuals) ---
+        // --- 1. THE NEURAL POINT-CLOUD (Visuals) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -39,60 +39,65 @@
         const coords = new Float32Array(10000 * 3);
         for(let i=0; i<30000; i++) { coords[i] = (Math.random() - 0.5) * 8; }
         partGeo.setAttribute('position', new THREE.BufferAttribute(coords, 3));
-        const partMat = new THREE.PointsMaterial({ size: 0.006, color: 0x00FF41, transparent: true, opacity: 0.7 });
+        const partMat = new THREE.PointsMaterial({ size: 0.007, color: 0x00FF41, transparent: true, opacity: 0.8 });
         const brainMesh = new THREE.Points(partGeo, partMat);
         scene.add(brainMesh);
         camera.position.z = 4;
 
         function animate() {
             requestAnimationFrame(animate);
-            brainMesh.rotation.y += 0.0008;
-            const s = 1 + Math.sin(Date.now() * 0.001) * 0.15;
+            brainMesh.rotation.y += 0.001;
+            const s = 1 + Math.sin(Date.now() * 0.001) * 0.12;
             brainMesh.scale.set(s, s, s);
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 2. THE LONDON VOICE (British Accent Lock) ---
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        // --- 2. THE LONDON VOICE (British Accent Logic) ---
         const synth = window.speechSynthesis;
         let selectedVoice = null;
 
-        // Force-loading the British Voice
         function loadVoices() {
             const voices = synth.getVoices();
-            // Prioritize British London-esque voices available on iOS (Daniel/Serena/Arthur)
-            selectedVoice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) ||
+            // Explicitly hunting for London/UK English accents
+            selectedVoice = voices.find(v => v.lang === 'en-GB' && (v.name.includes('Daniel') || v.name.includes('Serena') || v.name.includes('Oliver'))) ||
                             voices.find(v => v.lang === 'en-GB') || 
                             voices[0];
+            console.log("Voice set to: " + (selectedVoice ? selectedVoice.name : "Default"));
         }
-        synth.onvoiceschanged = loadVoices;
+        
+        if (synth.onvoiceschanged !== undefined) { synth.onvoiceschanged = loadVoices; }
         loadVoices();
 
-        document.body.onclick = () => {
-            if (SpeechRecognition) {
-                const rec = new SpeechRecognition();
-                rec.continuous = true;
-                rec.onresult = (e) => process(e.results[e.results.length - 1][0].transcript.toLowerCase());
+        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+        if (SpeechRecognition) {
+            const rec = new SpeechRecognition();
+            rec.continuous = true;
+            rec.onresult = (e) => {
+                const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                processIntent(cmd);
+            };
+            
+            document.body.onclick = () => {
                 rec.start();
-                speak("Voice link established. Good morning, sir. Systems are at your disposal.");
-            }
-        };
+                speak("Voice link established. Good day, sir. Systems are standing by.");
+            };
+        }
 
         function speak(text) {
             const utter = new SpeechSynthesisUtterance(text);
             utter.voice = selectedVoice;
-            utter.pitch = 0.95; // Crisp, professional tone
+            utter.pitch = 0.95;
             utter.rate = 1.0;
             synth.speak(utter);
             updateTerm("JARVIS: " + text);
         }
 
-        function process(cmd) {
+        function processIntent(cmd) {
             updateTerm("USER: " + cmd);
-            if (cmd.includes("status")) speak("All internal systems are emerald, sir. ASDV scouting is optimal.");
-            else if (cmd.includes("evolve")) speak("Understood. Commencing recursive research. I shall update the neural mesh shortly.");
-            else speak("Indeed, sir. Processing that through the sentinel node now.");
+            if (cmd.includes("status")) speak("All systems are emerald, sir. ASDV scouting is optimal.");
+            else if (cmd.includes("evolve")) speak("Understood. Commencing recursive research loop to optimize my mesh.");
+            else speak("Indeed, sir. Processing that through the sentinel node.");
         }
 
         function updateTerm(m) {
@@ -100,6 +105,8 @@
             t.innerHTML += `<br>> ${m.toUpperCase()}`;
             t.scrollTop = t.scrollHeight;
         }
+
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js?v=2.6'); }
     </script>
 </body>
 </html>
