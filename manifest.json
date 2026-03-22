@@ -1,8 +1,8 @@
 {
-  "name": "KA-A2A PHANTOM",
+  "name": "KA-A2A OMNI",
   "short_name": "A2A",
-  "description": "Autonomous Reactive Intelligence Core",
-  "start_url": "index.html?v=5.0",
+  "description": "Autonomous Interruptible Intelligence Core",
+  "start_url": "index.html?v=5.1-interruption",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",
