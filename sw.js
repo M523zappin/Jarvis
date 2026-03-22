@@ -1,8 +1,8 @@
-const CACHE_NAME = 'jarvis-v1';
+const cacheName = 'ka-a2a-v1';
 const assets = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(assets)));
+  e.waitUntil(caches.open(cacheName).then(cache => cache.addAll(assets)));
 });
 
 self.addEventListener('fetch', e => {
