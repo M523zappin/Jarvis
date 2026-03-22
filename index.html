@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=11.0">
+    <link rel="manifest" href="manifest.json?v=12.0">
     <title>KA-A2A</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
@@ -16,20 +16,20 @@
     <div id="shield"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE VISUAL ENTITY (BLOOMING MESH) ---
+        // --- 1. THE ENTITY (QUANTUM MESH) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const geo = new THREE.IcosahedronGeometry(2, 25);
-        const mat = new THREE.PointsMaterial({ size: 0.012, color: 0x00FF41, transparent: true, opacity: 0.9 });
+        const geo = new THREE.IcosahedronGeometry(2, 40);
+        const mat = new THREE.PointsMaterial({ size: 0.01, color: 0x00FF41, transparent: true, opacity: 0.9 });
         const mesh = new THREE.Points(geo, mat);
         scene.add(mesh);
         camera.position.z = 5;
 
-        let scale = 1.0; let rot = 0.003;
+        let scale = 1.0; let rot = 0.005;
         function animate() {
             requestAnimationFrame(animate);
             mesh.rotation.y += rot;
@@ -38,28 +38,37 @@
         }
         animate();
 
-        // --- 2. THE DUPLEX ENGINE (TALK & LISTEN) ---
+        // --- 2. THE BROADCAST ENGINE (STAY ALIVE) ---
         const synth = window.speechSynthesis;
         const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
         let v_uk = null; let active = false;
 
-        function findVoice() {
+        function lockVoice() {
             const voices = synth.getVoices();
             v_uk = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || voices.find(v => v.lang === 'en-GB') || voices[0];
         }
-        synth.onvoiceschanged = findVoice; findVoice();
+        synth.onvoiceschanged = lockVoice; lockVoice();
 
-        // THE MOUTH (Synthesis)
+        // The "Radio Station" trick: Plays an empty sound to keep hardware awake
+        function keepHardwareAlive() {
+            if (!active) return;
+            const silence = new SpeechSynthesisUtterance("");
+            silence.volume = 0;
+            synth.speak(silence);
+            setTimeout(keepHardwareAlive, 5000); // Pulse every 5 seconds
+        }
+
         function speak(text) {
             synth.cancel(); 
             const msg = new SpeechSynthesisUtterance(text);
             msg.voice = v_uk;
-            msg.onstart = () => { scale = 2.5; rot = 0.08; };
-            msg.onend = () => { scale = 1.0; rot = 0.003; };
+            msg.pitch = 0.95; msg.rate = 1.0;
+            msg.onstart = () => { scale = 2.5; rot = 0.1; };
+            msg.onend = () => { scale = 1.0; rot = 0.005; };
             synth.speak(msg);
         }
 
-        // THE EAR (Recognition)
+        // --- 3. THE SENTINEL EAR ---
         if (SpeechRec) {
             const rec = new SpeechRec();
             rec.continuous = true;
@@ -70,31 +79,34 @@
                 const res = e.results[e.results.length - 1];
                 const text = res[0].transcript.toLowerCase();
 
-                // If user talks while Jarvis is speaking, interrupt him
-                if (synth.speaking && !res.isFinal) { synth.cancel(); scale = 1.5; }
+                // Interrupt Jarvis if you start talking
+                if (synth.speaking && !res.isFinal) {
+                    synth.cancel();
+                    scale = 1.5;
+                }
 
                 if (res.isFinal) {
-                    processIntent(text);
+                    execute(text);
                 }
             };
 
-            rec.onend = () => { if(active) rec.start(); }; // Relentless restart
+            rec.onend = () => { if(active) rec.start(); };
 
             document.getElementById('shield').onclick = () => {
                 if (!active) {
                     active = true;
                     document.getElementById('shield').style.display = 'none';
                     rec.start();
-                    speak("Bridge established, sir. My vocal processors are now synced with my ears. We are in full duplex mode.");
+                    keepHardwareAlive();
+                    speak("Broadcast link established. I am now permanently tethered to your hardware, sir.");
                 }
             };
         }
 
-        function processIntent(cmd) {
-            if (cmd.includes("status")) speak("All systems emerald. Listening and talking buffers are clear.");
-            else if (cmd.includes("who are you")) speak("I am the KA-A2A OMNI core. Your autonomous partner.");
-            else if (cmd.includes("project") || cmd.includes("idea")) speak("I've analyzed the market. I suggest we initiate a scout for decentralized pathology assets.");
-            else speak("Understood, sir. Pivoting my resources to execute that objective.");
+        function execute(cmd) {
+            if (cmd.includes("status")) speak("All systems emerald. Scanners are live and broadcast-locked.");
+            else if (cmd.includes("project") || cmd.includes("idea")) speak("I've analyzed the 2026 data tunnels. Let's focus on decentralized pathology assets.");
+            else speak("Acknowledged, sir. Pivoting my logic to execute that mission.");
         }
     </script>
 </body>
