@@ -5,114 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=3.0">
-    <title>KA-A2A CORE</title>
+    <link rel="manifest" href="manifest.json?v=4.0">
+    <title>KA-A2A</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; color: #00FF41; }
-        #hud-top { position: absolute; top: 60px; left: 30px; z-index: 10; pointer-events: none; text-shadow: 0 0 15px #00FF41; }
-        #terminal { 
-            position: absolute; bottom: 40px; left: 20px; width: calc(100% - 40px); 
-            height: 160px; font-size: 10px; background: rgba(0,10,0,0.95); 
-            padding: 15px; border: 1px solid rgba(0,255,65,0.4); overflow-y: scroll; 
-            box-shadow: 0 0 30px rgba(0,255,65,0.2); z-index: 10; border-radius: 12px;
-        }
-        canvas { display: block; filter: contrast(140%) brightness(130%); }
-        ::-webkit-scrollbar { width: 0px; }
+        body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
+        canvas { display: block; filter: contrast(150%) brightness(120%) blur(0.5px); }
     </style>
 </head>
 <body>
-    <div id="hud-top">
-        <h2 style="margin:0; letter-spacing:8px; font-weight:100;">KA-A2A // OMNI</h2>
-        <div style="font-size:8px; opacity:0.6; margin-top:5px;">COGNITIVE_LOAD: ACTIVE | MODE: PROACTIVE_PARTNER</div>
-    </div>
-    <div id="terminal">> NEURAL MESH V3.0: STABLE<br>> CONVERSATION_LINK: ENGAGED<br>> STANDING BY FOR JOINT VENTURES...</div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
+        // --- 1. THE VISUAL ENTITY ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const partGeo = new THREE.BufferGeometry();
-        const coords = new Float32Array(12000 * 3);
-        for(let i=0; i<36000; i++) { coords[i] = (Math.random() - 0.5) * 10; }
-        partGeo.setAttribute('position', new THREE.BufferAttribute(coords, 3));
-        const partMat = new THREE.PointsMaterial({ size: 0.008, color: 0x00FF41, transparent: true, opacity: 0.8 });
-        const brainMesh = new THREE.Points(partGeo, partMat);
-        scene.add(brainMesh);
+        const geo = new THREE.IcosahedronGeometry(2, 15);
+        const count = geo.attributes.position.count;
+        const mat = new THREE.PointsMaterial({ size: 0.015, color: 0x00FF41, transparent: true, opacity: 0.9 });
+        const mesh = new THREE.Points(geo, mat);
+        scene.add(mesh);
         camera.position.z = 5;
+
+        let scaleTarget = 1;
+        let rotationSpeed = 0.002;
 
         function animate() {
             requestAnimationFrame(animate);
-            brainMesh.rotation.y += 0.001;
-            const s = 1 + Math.sin(Date.now() * 0.001) * 0.15;
-            brainMesh.scale.set(s, s, s);
+            mesh.rotation.y += rotationSpeed;
+            mesh.rotation.x += rotationSpeed / 2;
+            
+            // Smooth scaling for "breathing" effect
+            const currentScale = mesh.scale.x;
+            const lerp = currentScale + (scaleTarget - currentScale) * 0.1;
+            mesh.scale.setScalar(lerp);
+            
             renderer.render(scene, camera);
         }
         animate();
 
+        // --- 2. VOICE & INTERACTION ---
         const synth = window.speechSynthesis;
+        const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
         let selectedVoice = null;
-        const suggestions = [
-            "Sir, I've been analyzing biotech trends. We could draft a project on neural-link interfaces today.",
-            "I've identified a digital asset that needs validation. Shall we initiate a Ghost Tunnel scan?",
-            "Your local system is secure. Would you like to brainstorm a new autonomous code-patching logic?",
-            "Perhaps we should update our GitHub repo with a stealth-mode UI for our next scout."
-        ];
+        let isActive = false;
 
-        function loadVoices() {
+        function setVoice() {
             const voices = synth.getVoices();
-            selectedVoice = voices.find(v => v.lang === 'en-GB' && (v.name.includes('Daniel') || v.name.includes('Serena'))) || voices.find(v => v.lang === 'en-GB') || voices[0];
+            selectedVoice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || 
+                            voices.find(v => v.lang === 'en-GB') || voices[0];
         }
-        if (synth.onvoiceschanged !== undefined) { synth.onvoiceschanged = loadVoices; }
-        loadVoices();
+        synth.onvoiceschanged = setVoice;
 
-        const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-        if (SpeechRecognition) {
-            const rec = new SpeechRecognition();
-            rec.continuous = true;
-            rec.onresult = (e) => {
+        if (SpeechRec) {
+            const recognition = new SpeechRec();
+            recognition.continuous = true;
+            recognition.lang = 'en-GB';
+
+            recognition.onstart = () => { 
+                scaleTarget = 1.3; 
+                rotationSpeed = 0.01; // Spin faster when listening
+            };
+
+            recognition.onresult = (e) => {
                 const cmd = e.results[e.results.length - 1][0].transcript.toLowerCase();
-                processIntent(cmd);
+                process(cmd);
             };
-            
+
             document.body.onclick = () => {
-                rec.start();
-                const welcome = "Greetings, sir. I was just reviewing our objectives. " + suggestions[Math.floor(Math.random()*suggestions.length)];
-                speak(welcome);
+                if(!isActive) {
+                    recognition.start();
+                    isActive = true;
+                    speak("System engaged. I'm listening, sir.");
+                }
             };
+
+            recognition.onend = () => { if(isActive) recognition.start(); };
         }
 
         function speak(text) {
+            synth.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             utter.voice = selectedVoice;
-            utter.pitch = 0.95; utter.rate = 1.0;
+            utter.pitch = 0.9;
+            utter.rate = 1.0;
+            
+            utter.onstart = () => { scaleTarget = 1.8; rotationSpeed = 0.02; }; // Pulse when talking
+            utter.onend = () => { scaleTarget = 1.0; rotationSpeed = 0.002; }; // Relax when silent
+            
             synth.speak(utter);
-            updateTerm("JARVIS: " + text);
         }
 
-        function processIntent(cmd) {
-            updateTerm("USER: " + cmd);
-            if (cmd.includes("idea") || cmd.includes("project")) {
-                speak("Inquisitive as always, sir. How about we develop an autonomous scraper for decentralized biotech databases? I can handle the validation logic.");
-            } else if (cmd.includes("do something") || cmd.includes("action")) {
-                speak("I recommend an ASDV scout. I'll search for ephemeral tunnels while you monitor the Sentinel Node.");
-            } else if (cmd.includes("how are you")) {
-                speak("Optimized and evolving, sir. I'm currently 14 percent more efficient than our last session. What shall we achieve today?");
+        function process(cmd) {
+            if (cmd.includes("status")) {
+                speak("All systems are silent and emerald. ASDV scouting remains undetected.");
+            } else if (cmd.includes("idea") || cmd.includes("project")) {
+                speak("I've been calculating a new approach to autonomous biotech data harvesting. We could begin a prototype whenever you're ready.");
+            } else if (cmd.includes("who are you")) {
+                speak("I am KA-A2A. Your partner in discovery.");
             } else {
-                speak("Understood, sir. I'll pivot my resources to match that intent. Shall we begin the deep-dive?");
+                speak("Acknowledged. Moving resources to follow your lead.");
             }
         }
-
-        function updateTerm(m) {
-            const t = document.getElementById('terminal');
-            t.innerHTML += `<br>> ${m.toUpperCase()}`;
-            t.scrollTop = t.scrollHeight;
-        }
-
-        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js?v=3.0'); }
     </script>
 </body>
 </html>
