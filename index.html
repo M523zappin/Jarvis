@@ -9,95 +9,87 @@
     <title>KA-A2A CORE</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; font-family: 'Courier New', monospace; color: #00FF41; }
-        #hud-top { position: absolute; top: 40px; left: 20px; z-index: 10; pointer-events: none; text-shadow: 0 0 10px #00FF41; }
+        #hud-top { position: absolute; top: 50px; left: 30px; z-index: 10; pointer-events: none; text-shadow: 0 0 15px #00FF41; }
         #terminal { 
-            position: absolute; bottom: 30px; left: 20px; width: calc(100% - 40px); 
-            height: 120px; font-size: 11px; background: rgba(0,20,0,0.85); 
-            padding: 10px; border: 1px solid #00FF41; overflow-y: hidden; 
-            box-shadow: 0 0 15px rgba(0,255,65,0.2); z-index: 10;
+            position: absolute; bottom: 40px; left: 20px; width: calc(100% - 40px); 
+            height: 130px; font-size: 10px; background: rgba(0,10,0,0.9); 
+            padding: 12px; border: 1px solid rgba(0,255,65,0.3); overflow: hidden; 
+            box-shadow: 0 0 20px rgba(0,255,65,0.1); z-index: 10; border-radius: 5px;
         }
-        .glitch { animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
-        canvas { display: block; filter: contrast(120%) brightness(110%); }
+        canvas { display: block; filter: contrast(130%) brightness(120%); }
+        .scanning { border-top: 1px solid #00FF41; width: 100%; position: absolute; top: 0; animation: scan 3s infinite linear; opacity: 0.2; }
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
     </style>
 </head>
 <body>
     <div id="hud-top">
-        <h2 style="margin:0; letter-spacing:4px;" class="glitch">KA-A2A // GENESIS</h2>
-        <div id="protocol-status" style="font-size:10px; margin-top:5px;">[PROTOCOL]: ASDV_ACTIVE_GHOST_MODE</div>
+        <h2 style="margin:0; letter-spacing:6px; font-weight:lighter;">KA-A2A // CORE</h2>
+        <div style="font-size:9px; opacity:0.7;">ASDV_LINK: STABLE | RRL_CYCLE: 14.2ms</div>
     </div>
-    <div id="terminal">> INITIALIZING NEURAL BRIDGE...<br>> SENTINEL AUDIT: SUCCESSFUL<br>> AWAITING VOICE COMMAND...</div>
+    <div id="terminal"><div class="scanning"></div>> NEURAL MESH ONLINE...<br>> SELECTING LINGUISTIC PROFILE: UK_ELITE<br>> AWAITING COMMAND...</div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE EMERALD CORE (3D Visuals) ---
+        // --- 1. THE ADVANCED POINT-CLOUD CORE ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Spherical Wireframe (The Eye of Jarvis)
-        const geometry = new THREE.SphereGeometry(2, 32, 32);
-        const material = new THREE.MeshBasicMaterial({ 
-            color: 0x00FF41, wireframe: true, transparent: true, opacity: 0.4 
-        });
-        const sphere = new THREE.Mesh(geometry, material);
-        scene.add(sphere);
-
-        // Inner core glow
-        const innerGeo = new THREE.IcosahedronGeometry(1.2, 1);
-        const innerMat = new THREE.MeshBasicMaterial({ color: 0x00FF41, wireframe: true, transparent: true, opacity: 0.1 });
-        const innerSphere = new THREE.Mesh(innerGeo, innerMat);
-        scene.add(innerSphere);
-
-        camera.position.z = 5;
+        const particlesGeometry = new THREE.BufferGeometry();
+        const posArray = new Float32Array(5000 * 3);
+        for(let i=0; i < 5000 * 3; i++) { posArray[i] = (Math.random() - 0.5) * 10; }
+        particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+        const particlesMaterial = new THREE.PointsMaterial({ size: 0.005, color: 0x00FF41, transparent: true, opacity: 0.8 });
+        const particlesMesh = new THREE.Points(particlesGeometry, particlesMaterial);
+        scene.add(particlesMesh);
+        camera.position.z = 3;
 
         function animate() {
             requestAnimationFrame(animate);
-            const time = Date.now() * 0.001;
-            sphere.rotation.y += 0.003;
-            sphere.rotation.x += 0.001;
-            innerSphere.rotation.y -= 0.005;
-            
-            // Pulsing effect
-            const pulse = 1 + Math.sin(time * 2) * 0.08;
-            sphere.scale.set(pulse, pulse, pulse);
-            
+            particlesMesh.rotation.y += 0.001;
+            particlesMesh.rotation.x += 0.0005;
+            const pulse = 1 + Math.sin(Date.now() * 0.0015) * 0.1;
+            particlesMesh.scale.set(pulse, pulse, pulse);
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 2. VOICE & AUTONOMOUS LOGIC ---
+        // --- 2. THE BRITISH VOICE CORE ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         const synth = window.speechSynthesis;
 
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.continuous = true;
-            recognition.lang = 'en-US';
-
-            document.body.onclick = () => {
+        document.body.onclick = () => {
+            if (SpeechRecognition) {
+                const recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.onresult = (e) => {
+                    const input = e.results[e.results.length - 1][0].transcript.toLowerCase();
+                    processIntent(input);
+                };
                 recognition.start();
-                updateTerminal("VOICE LINK: ESTABLISHED");
-                speak("KA A2A Genesis online. Ready for autonomous instruction.");
-            };
+                speak("Systems primed. What is the objective, sir?");
+            }
+        };
 
-            recognition.onresult = (event) => {
-                const input = event.results[event.results.length - 1][0].transcript.toLowerCase();
-                updateTerminal("USER: " + input);
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            const voices = synth.getVoices();
+            // Specifically hunting for the UK British accent
+            const britishVoice = voices.find(v => v.lang.includes('en-GB')) || voices[0];
+            utterance.voice = britishVoice;
+            utterance.pitch = 0.9;
+            utterance.rate = 1.05;
+            synth.speak(utterance);
+            updateTerminal("JARVIS: " + text);
+        }
 
-                if (input.includes("status") || input.includes("report")) {
-                    speak("All systems emerald. ASDV protocol is scouting ghost tunnels. RRL loop is active.");
-                } else if (input.includes("evolve")) {
-                    updateTerminal("INITIATING RECURSIVE RESEARCH LOOP...");
-                    speak("Scanning for logic patches. Memory compression enabled.");
-                } else if (input.includes("ghost")) {
-                    speak("Engaging ephemeral tunnel for stealth discovery.");
-                }
-            };
-
-            recognition.onend = () => { recognition.start(); }; // Keep it alive
+        function processIntent(input) {
+            updateTerminal("USER: " + input);
+            if (input.includes("status")) speak("All systems emerald. ASDV is currently scouting the ghost tunnels.");
+            else if (input.includes("evolve")) speak("Understood. Commencing recursive research loop for logic optimization.");
+            else speak("Acknowledged. Processing your request through the sentinel node.");
         }
 
         function updateTerminal(msg) {
@@ -106,24 +98,7 @@
             term.scrollTop = term.scrollHeight;
         }
 
-        function speak(text) {
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.pitch = 0.7; // Deep, advanced tone
-            utterance.rate = 1.0;
-            synth.speak(utterance);
-            updateTerminal("JARVIS: " + text);
-        }
-
-        // --- 3. PWA SERVICE WORKER ---
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
     </script>
 </body>
 </html>
