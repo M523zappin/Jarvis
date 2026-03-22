@@ -1,9 +1,13 @@
-const CACHE = 'a2a-v6.0-omni';
-self.addEventListener('install', e => {
-  self.skipWaiting();
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./', './index.html', './manifest.json'])));
-});
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
-});
-self.addEventListener('fetch', e => e.respondWith(caches.match(e.request).then(r => r || fetch(e.request))));
+# KA-A2A OMNI V6.0
+**Role:** Proactive Intelligence Partner | **Linguistic Core:** London Elite
+
+## Interaction Matrix
+1. **Initialize:** Open PWA and tap the center. 
+2. **Wake Word:** Always address as **"Jarvis"** or **"A2A"**.
+3. **Interrupt Mode:** Simply speak over the system to silence it and provide new commands.
+4. **Visual Cues:** * **Idle:** Gentle rotation.
+    * **Listening:** Expansion.
+    * **Executing:** High-frequency vibration.
+
+## Core Directives
+Designed to analyze digital assets and biotech trends (Digital Pathology, Upstream Pipelines) autonomously.
