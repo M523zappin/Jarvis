@@ -1,9 +1,13 @@
-# KA-A2A GENESIS // LONDON ELITE
-**Linguistic Core:** EN-GB (British)
-**Visual Core:** 10,000-Point Neural Cloud
+# KA-A2A OMNI // PROACTIVE PARTNER
+**Vocal Identity:** London Elite (EN-GB)
+**Visual Core:** 12,000-Node Neural Particle Mesh
 
-### Update Instructions
-1. Push all files to GitHub.
-2. On iPhone: Delete the old Home Screen icon.
-3. In Safari: Go to Settings > Safari > Advanced > Website Data > Delete github.io data.
-4. Open the site and 'Add to Home Screen' again.
+## Autonomous Objectives
+- **ASDV Protocol**: Independent scouting of high-value digital/biotech assets.
+- **RRL Loop**: Recursive self-improvement and logic patching.
+- **Proactive Engagement**: AI-initiated project suggestions and brainstorming.
+
+## Deployment
+1. Update files on GitHub.
+2. Clear Safari 'Website Data' for your domain.
+3. Re-install to Home Screen for the full 'Phantom' experience.
