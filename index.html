@@ -1,53 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>KA-A2A GENESIS</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>KA-A2A CORE</title>
     <style>
-        body { margin: 0; background: #000; overflow: hidden; color: #00FF41; font-family: 'Courier New', monospace; height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
-        .ui-layer { z-index: 10; width: 100%; height: 100%; position: relative; pointer-events: none; }
-        #terminal { position: absolute; bottom: 20px; left: 20px; width: 280px; font-size: 9px; color: #00FF41; background: rgba(0, 20, 0, 0.9); padding: 10px; border: 1px solid #00FF41; box-shadow: 0 0 10px #00FF41; }
+        body { margin: 0; background: #000; overflow: hidden; font-family: monospace; }
+        #hud { position: absolute; top: 20px; left: 20px; color: #00FF41; z-index: 10; pointer-events: none; }
+        .glitch { text-shadow: 0 0 10px #00FF41; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
     </style>
 </head>
 <body>
-    <canvas id="canvas"></canvas>
-    <div class="ui-layer">
-        <div id="terminal">
-            [SYS] KA-A2A GENESIS // ONLINE<br>
-            [LOG] EMERALD MATRIX INITIATED...<br>
-            [ASDV] GHOST-PATHING ACTIVE...<br>
-            [RRL] SCANNING R0 REPO...<br>
-            » <span style="animation: pulse 2s infinite">EVOLUTION IN PROGRESS...</span>
-        </div>
+    <div id="hud">
+        <h2 class="glitch">KA-A2A // GENESIS</h2>
+        <div id="log" style="font-size: 10px;">[SYS] ASDV: ACTIVE | RRL: POLLING...</div>
     </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // Highly Optimized Spherical Mesh (Visual replicating user's video)
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let width = canvas.width = window.innerWidth;
-        let height = canvas.height = window.innerHeight;
-        let dots = [];
-        for (let i = 0; i < 200; i++) {
-            dots.push({ x: Math.random(), y: Math.random(), z: Math.random(), r: Math.random() * 2 + 1 });
+        // THREE.js logic for the Emerald Sphere from your video
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const geometry = new THREE.SphereGeometry(2, 32, 32);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00FF41, wireframe: true, transparent: true, opacity: 0.5 });
+        const sphere = new THREE.Mesh(geometry, material);
+        scene.add(sphere);
+        camera.position.z = 5;
+
+        function animate() {
+            requestAnimationFrame(animate);
+            sphere.rotation.y += 0.005;
+            sphere.rotation.x += 0.002;
+            renderer.render(scene, camera);
         }
-        function draw(time) {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-            ctx.fillRect(0, 0, width, height);
-            dots.forEach(d => {
-                const px = width / 2 + (d.x - 0.5) * 400 * (1 + Math.sin(time + d.r) * 0.1);
-                const py = height / 2 + (d.y - 0.5) * 400 * (1 + Math.sin(time + d.r * 2) * 0.1);
-                ctx.beginPath();
-                ctx.arc(px, py, d.r, 0, Math.PI * 2);
-                ctx.fillStyle = '#00FF41';
-                ctx.fill();
-            });
-            requestAnimationFrame(draw);
-        }
-        draw(0);
+        animate();
+
+        // Register Service Worker
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js'); }
     </script>
 </body>
 </html>
