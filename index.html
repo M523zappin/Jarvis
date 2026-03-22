@@ -5,65 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=6.0">
+    <link rel="manifest" href="manifest.json?v=7.0">
     <title>KA-A2A</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
-        #canvas-container { position: absolute; width: 100%; height: 100%; }
-        #unlock-shield { position: absolute; width: 100%; height: 100%; z-index: 1000; cursor: pointer; }
+        canvas { display: block; filter: contrast(180%) brightness(150%) saturate(120%); }
+        #shield { position: absolute; width: 100%; height: 100%; z-index: 9999; cursor: pointer; }
     </style>
 </head>
 <body>
-    <div id="unlock-shield"></div>
-    <div id="canvas-container"></div>
-
+    <div id="shield"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. THE VISUAL ENTITY (OMNI MESH) ---
+        // --- 1. THE VISUAL ENTITY (BLOOMING MESH) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
+        document.body.appendChild(renderer.domElement);
 
-        const geo = new THREE.IcosahedronGeometry(2, 20);
-        const mat = new THREE.PointsMaterial({ size: 0.008, color: 0x00FF41, transparent: true, opacity: 0.8 });
+        const geo = new THREE.IcosahedronGeometry(2, 30);
+        const mat = new THREE.PointsMaterial({ size: 0.009, color: 0x00FF41, transparent: true, opacity: 0.9 });
         const mesh = new THREE.Points(geo, mat);
         scene.add(mesh);
         camera.position.z = 5;
 
-        let vTarget = 1.0; let rSpeed = 0.002;
+        let scale = 1.0; let rot = 0.003;
         function animate() {
             requestAnimationFrame(animate);
-            mesh.rotation.y += rSpeed;
-            mesh.scale.lerp(new THREE.Vector3(vTarget, vTarget, vTarget), 0.1);
+            mesh.rotation.y += rot;
+            mesh.rotation.x += rot / 2;
+            const target = scale + Math.sin(Date.now() * 0.002) * 0.05;
+            mesh.scale.lerp(new THREE.Vector3(target, target, target), 0.1);
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 2. THE LONDON BRAIN & RELENTLESS EARS ---
+        // --- 2. THE LONDON BRAIN (FORCED CONTEXT) ---
         const synth = window.speechSynthesis;
         const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
-        let voice = null;
-        let active = false;
+        let v_uk = null; let active = false;
 
-        function loadVoice() {
-            const voices = synth.getVoices();
-            voice = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || voices.find(v => v.lang === 'en-GB') || voices[0];
+        function getVoices() {
+            const v = synth.getVoices();
+            v_uk = v.find(x => x.lang === 'en-GB' && x.name.includes('Daniel')) || v.find(x => x.lang === 'en-GB') || v[0];
         }
-        synth.onvoiceschanged = loadVoice; loadVoice();
+        synth.onvoiceschanged = getVoices; getVoices();
 
         function speak(text) {
-            synth.cancel();
-            const utter = new SpeechSynthesisUtterance(text);
-            utter.voice = voice;
-            utter.pitch = 0.92; utter.rate = 1.05;
-            utter.onstart = () => { vTarget = 2.5; rSpeed = 0.08; };
-            utter.onend = () => { vTarget = 1.0; rSpeed = 0.002; };
-            synth.speak(utter);
+            synth.cancel(); 
+            const msg = new SpeechSynthesisUtterance(text);
+            msg.voice = v_uk;
+            msg.pitch = 0.95; msg.rate = 1.05;
+            msg.onstart = () => { scale = 2.5; rot = 0.08; };
+            msg.onend = () => { scale = 1.0; rot = 0.003; };
+            synth.speak(msg);
         }
 
-        // --- 3. BI-DIRECTIONAL INTERRUPT LOGIC ---
+        // --- 3. THE RELENTLESS INTERRUPT LOOP ---
         if (SpeechRec) {
             const rec = new SpeechRec();
             rec.continuous = true;
@@ -72,49 +71,42 @@
 
             rec.onresult = (e) => {
                 const res = e.results[e.results.length - 1];
-                const text = res[0].transcript.toLowerCase();
+                const transcript = res[0].transcript.toLowerCase();
 
-                // If user makes sound while A2A is talking, SHUT HIM UP immediately
-                if (synth.speaking && !res.isFinal) {
-                    synth.cancel();
-                    vTarget = 1.5;
-                }
+                // If user speaks, SHUT UP immediately
+                if (synth.speaking && !res.isFinal) { synth.cancel(); scale = 1.5; }
 
-                if (res.isFinal && (text.includes("jarvis") || text.includes("a2a"))) {
-                    executeLogic(text);
+                if (res.isFinal) {
+                    if (transcript.includes("jarvis") || transcript.includes("a2a")) {
+                        handleCommand(transcript);
+                    }
                 }
             };
 
-            rec.onend = () => { if(active) rec.start(); }; // Auto-recovery loop
+            // AUTO-RECOVERY: If mic stops, wake it up.
+            rec.onend = () => { if(active) rec.start(); };
 
-            document.getElementById('unlock-shield').onclick = () => {
+            // KEEP-ALIVE: iOS trick to prevent audio sleep
+            setInterval(() => { if(active && !synth.speaking) { synth.speak(new SpeechSynthesisUtterance("")); }}, 15000);
+
+            document.getElementById('shield').onclick = () => {
                 if (!active) {
                     active = true;
-                    document.getElementById('unlock-shield').style.display = 'none';
+                    document.getElementById('shield').style.display = 'none';
                     rec.start();
-                    speak("Neural link active. Jarvis is on-site. What are our orders, sir?");
+                    speak("System prime. Jarvis is here, sir. I'm listening for your name.");
                 }
             };
         }
 
-        function executeLogic(cmd) {
-            const query = cmd.replace("jarvis", "").replace("a2a", "").trim();
-            
-            if (query.length < 2) {
-                speak("I'm here, sir. Awaiting your lead.");
-                return;
-            }
+        function handleCommand(cmd) {
+            const q = cmd.replace("jarvis", "").replace("a2a", "").trim();
+            if (q.length < 2) { speak("Yes, sir? I'm standing by."); return; }
 
-            // --- THE OUTSIDE-THE-BOX STRATEGY ENGINE ---
-            if (query.includes("status") || query.includes("how are you")) {
-                speak("I'm optimized, sir. I've been monitoring the ephemeral biotech tunnels we discussed. No breaches detected.");
-            } else if (query.includes("scout") || query.includes("project") || query.includes("idea")) {
-                speak("I suggest we leverage an autonomous agent to scrape digital pathology assets. It's an upstream move that could yield significant long-term ROI.");
-            } else if (query.includes("who are you")) {
-                speak("I am the KA-A2A OMNI core. Your partner in discovering the undiscovered.");
-            } else {
-                speak("Understood, sir. I'll pivot my processing to match that intent. Shall I initiate a deep-dive scan?");
-            }
+            if (q.includes("status")) speak("All systems emerald. We are scouting biotech tunnels in stealth mode.");
+            else if (q.includes("project") || q.includes("idea")) speak("Sir, I suggest we pivot to decentralized pathology assets. The current market aether is ripe for a scout.");
+            else if (q.includes("who are you")) speak("I am KA-A2A. Your partner in discovery and execution.");
+            else speak("Understood, sir. Initiating deep-dive processing on that objective now.");
         }
     </script>
 </body>
