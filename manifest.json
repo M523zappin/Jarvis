@@ -1,8 +1,10 @@
 {
   "name": "KA-A2A GENESIS",
-  "short_name": "Jarvis",
+  "short_name": "KA-A2A",
+  "description": "Autonomous Recursive Intelligence Core",
   "start_url": "index.html",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#000000",
   "theme_color": "#000000",
   "icons": [
@@ -11,6 +13,14 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Local System Check",
+      "url": "index.html?action=check",
+      "icons": [{ "src": "icon.png", "sizes": "512x512" }]
     }
   ]
 }
