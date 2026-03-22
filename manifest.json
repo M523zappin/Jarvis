@@ -1,15 +1,9 @@
 {
-  "name": "KA-A2A OMNI",
-  "short_name": "KA-A2A",
-  "start_url": "index.html?v=3.0",
+  "name": "KA-A2A",
+  "short_name": "A2A",
+  "start_url": "index.html?v=4.0",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
-  "icons": [
-    {
-      "src": "icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
+  "icons": [{ "src": "icon.png", "sizes": "512x512", "type": "image/png" }]
 }
