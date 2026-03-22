@@ -5,25 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="manifest" href="manifest.json?v=10.0">
+    <link rel="manifest" href="manifest.json?v=11.0">
     <title>KA-A2A</title>
     <style>
         body { margin: 0; background: #000; overflow: hidden; touch-action: none; }
-        #shield { position: absolute; width: 100%; height: 100%; z-index: 9999; cursor: pointer; }
+        #shield { position: absolute; width: 100%; height: 100%; z-index: 9999; }
     </style>
 </head>
 <body>
     <div id="shield"></div>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
-        // --- 1. NEURAL VISUALS (HIGH STABILITY) ---
+        // --- 1. THE VISUAL ENTITY (BLOOMING MESH) ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        const geo = new THREE.IcosahedronGeometry(2, 30);
+        const geo = new THREE.IcosahedronGeometry(2, 25);
         const mat = new THREE.PointsMaterial({ size: 0.012, color: 0x00FF41, transparent: true, opacity: 0.9 });
         const mesh = new THREE.Points(geo, mat);
         scene.add(mesh);
@@ -33,77 +33,68 @@
         function animate() {
             requestAnimationFrame(animate);
             mesh.rotation.y += rot;
-            mesh.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.15);
+            mesh.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.1);
             renderer.render(scene, camera);
         }
         animate();
 
-        // --- 2. THE IMMORTAL ENGINE (AUDIO ANCHOR) ---
+        // --- 2. THE DUPLEX ENGINE (TALK & LISTEN) ---
         const synth = window.speechSynthesis;
         const SpeechRec = window.webkitSpeechRecognition || window.SpeechRecognition;
-        let voice = null; let isActive = false;
-        let audioCtx;
+        let v_uk = null; let active = false;
 
-        function initAudioAnchor() {
-            // Creates a sub-audible high-frequency tone to prevent iOS from sleeping
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(21000, audioCtx.currentTime); // Inaudible to humans
-            gain.gain.setValueAtTime(0.001, audioCtx.currentTime); 
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
+        function findVoice() {
+            const voices = synth.getVoices();
+            v_uk = voices.find(v => v.lang === 'en-GB' && v.name.includes('Daniel')) || voices.find(v => v.lang === 'en-GB') || voices[0];
         }
+        synth.onvoiceschanged = findVoice; findVoice();
 
-        function getVoice() {
-            const v = synth.getVoices();
-            voice = v.find(x => x.lang === 'en-GB' && x.name.includes('Daniel')) || v.find(x => x.lang === 'en-GB') || v[0];
-        }
-        synth.onvoiceschanged = getVoice; getVoice();
-
+        // THE MOUTH (Synthesis)
         function speak(text) {
-            synth.cancel();
+            synth.cancel(); 
             const msg = new SpeechSynthesisUtterance(text);
-            msg.voice = voice;
-            msg.pitch = 0.92; msg.rate = 1.05;
+            msg.voice = v_uk;
             msg.onstart = () => { scale = 2.5; rot = 0.08; };
             msg.onend = () => { scale = 1.0; rot = 0.003; };
             synth.speak(msg);
         }
 
-        // --- 3. RELENTLESS EARS ---
+        // THE EAR (Recognition)
         if (SpeechRec) {
             const rec = new SpeechRec();
-            rec.continuous = true; rec.interimResults = true; rec.lang = 'en-GB';
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.lang = 'en-GB';
 
             rec.onresult = (e) => {
                 const res = e.results[e.results.length - 1];
-                const input = res[0].transcript.toLowerCase();
-                if (synth.speaking && !res.isFinal) { synth.cancel(); scale = 1.6; }
-                if (res.isFinal) handle(input);
+                const text = res[0].transcript.toLowerCase();
+
+                // If user talks while Jarvis is speaking, interrupt him
+                if (synth.speaking && !res.isFinal) { synth.cancel(); scale = 1.5; }
+
+                if (res.isFinal) {
+                    processIntent(text);
+                }
             };
 
-            // Recursive restart: Never let the mic stay dead
-            rec.onend = () => { if(isActive) rec.start(); };
-            rec.onerror = () => { if(isActive) setTimeout(() => rec.start(), 100); };
+            rec.onend = () => { if(active) rec.start(); }; // Relentless restart
 
             document.getElementById('shield').onclick = () => {
-                if (!isActive) {
-                    isActive = true;
+                if (!active) {
+                    active = true;
                     document.getElementById('shield').style.display = 'none';
-                    initAudioAnchor(); // Lock the hardware on
                     rec.start();
-                    speak("Immortal kernel active. I am locked into your hardware, sir. I won't drop again.");
+                    speak("Bridge established, sir. My vocal processors are now synced with my ears. We are in full duplex mode.");
                 }
             };
         }
 
-        function handle(cmd) {
-            if (cmd.includes("status")) speak("All systems emerald. Bio-scanners at maximum depth.");
-            else if (cmd.includes("project") || cmd.includes("idea")) speak("I've scouted the current mesh. Decentralized pathology is the primary move today.");
-            else speak("Processing that objective now, sir. The link is stable.");
+        function processIntent(cmd) {
+            if (cmd.includes("status")) speak("All systems emerald. Listening and talking buffers are clear.");
+            else if (cmd.includes("who are you")) speak("I am the KA-A2A OMNI core. Your autonomous partner.");
+            else if (cmd.includes("project") || cmd.includes("idea")) speak("I've analyzed the market. I suggest we initiate a scout for decentralized pathology assets.");
+            else speak("Understood, sir. Pivoting my resources to execute that objective.");
         }
     </script>
 </body>
